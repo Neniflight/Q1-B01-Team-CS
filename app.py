@@ -16,7 +16,7 @@ import mesop as me
 import mesop.labs as mel
 
 generation_config = {
-    "max_output_tokens": 8192,
+    "max_output_tokens": 10000,
     "response_mime_type": "text/plain",
     "temperature": 1, # higher temp --> more risks the model takes with choices
     "top_p": 0.95, # how many tokens are considered when producing outputs
@@ -45,7 +45,6 @@ class State:
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
   chat_history: list = field(default_factory=lambda: [])
 
-
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
 
@@ -56,16 +55,12 @@ def handle_upload(event: me.UploadEvent):
 ### THIS IS ERROR 
 def ask_predefined_questions(event: me.ClickEvent):
     state = me.state(State)
-    print(f"Current state: {state}")  # Debug print
     for question in state.predefined_questions:
-        print(f"Processing question: {question}")  # Debug print
-        state.chat_history.append(mel.ChatMessage(role="user", content=question))
-        responses = list(transform(question, state.chat_history))
-        for response in responses:
-            state.chat_history.append(mel.ChatMessage(role="assistant", content=response))
+        state.chat_history.append(mel.ChatMessage(role='user', content=question))
+        responses = transform(question, state.chat_history)           
 ### 
 
-@me.page(path="/chat", title="Gemini Misinformation ChatBot")
+@me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
     state = me.state(State)
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
@@ -90,6 +85,7 @@ def page():
         title="Gemini Misinformation Helper", 
         bot_user="Chanly", # Short for the Vietnamese word for Truth
       )
+
     with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around")):
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
@@ -99,25 +95,25 @@ def page():
         me.progress_bar(mode="determinate", value=state.overall_stance_score*10, color='primary')
 
 def transform(input: str, history: list[mel.ChatMessage]):
+    state = me.state(State)
     print(history)
     chat_history = "\n".join(f"{message.role}: {message.content}" for message in history)
     full_input = f"{chat_history}\nuser: {input}"
 
     response = model.generate_content(full_input, stream=True)
 
-    state = me.state(State)
     full_response_text = ""
     for chunk in response:
         text_chunk = chunk.text
-        overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-        overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-        if overall_sens_match:
-            state.overall_sens_score = float(overall_sens_match.group(1))
-            print(state.overall_sens_score)
-        if overall_stance_match:
-            state.overall_stance_score = float(overall_stance_match.group(1))
         
         full_response_text += text_chunk + "\n"  # Collecting all text chunks
-
-    state.chat_history.append(mel.ChatMessage(role="assistant", content=full_response_text))
+    # state.chat_history.append(mel.ChatMessage(role="assistant", content=full_response_text))
+    overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', full_response_text, re.IGNORECASE)
+    overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', full_response_text, re.IGNORECASE)
+    if overall_sens_match:
+        state.overall_sens_score = float(overall_sens_match.group(1))
+        print(state.overall_sens_score)
+    if overall_stance_match:
+        state.overall_stance_score = float(overall_stance_match.group(1))
+    state.chat_history = history
     return full_response_text.splitlines()
