@@ -6,6 +6,8 @@ import re
 import mesop as me
 import mesop.labs as mel
 from dataclasses import field
+import time
+from PyPDF2 import PdfReader
 
 from questions import predefined_questions
 
@@ -16,7 +18,7 @@ import mesop as me
 import mesop.labs as mel
 
 generation_config = {
-    "max_output_tokens": 10000,
+    "max_output_tokens": 4000, # less output, means faster
     "response_mime_type": "text/plain",
     "temperature": 1, # higher temp --> more risks the model takes with choices
     "top_p": 0.95, # how many tokens are considered when producing outputs
@@ -34,16 +36,17 @@ model = genai.GenerativeModel(
     model_name="gemini-1.5-pro-002",
     generation_config=generation_config,
     safety_settings=safety_settings,
-    system_instruction="You are trying to fight against misinformation by scoring different articles on their factuality factors. In your responses, do not use copyrighted material",
+    system_instruction="You are trying to fight against misinformation by scoring different articles on their factuality factors. In your responses, do not use copyrighted material and be concise. Do not assess an article until you are given a factuality factor to grade on.",
 )
 
 @me.stateclass
 class State:
   file: me.UploadedFile
+  uploaded: bool = False
   overall_sens_score: float = 0.0
   overall_stance_score: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
-  chat_history: list = field(default_factory=lambda: [])
+  chat_history: list[mel.ChatMessage]
 
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
@@ -51,14 +54,26 @@ def load(e: me.LoadEvent):
 def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
+  state.uploaded = True
 
-### THIS IS ERROR 
+def pdf_to_text(user_pdf):
+    reader = PdfReader(user_pdf)
+    text = ""
+    for i in range(len(reader.pages)):
+      text_page = reader.pages[i]
+      text += text_page.extract_text()
+    return text
+# citation: https://pypdf2.readthedocs.io/en/3.x/user/extract-text.html
+# citation: https://www.geeksforgeeks.org/convert-pdf-to-txt-file-using-python/
+
 def ask_predefined_questions(event: me.ClickEvent):
     state = me.state(State)
     for question in state.predefined_questions:
-        state.chat_history.append(mel.ChatMessage(role='user', content=question))
-        responses = transform(question, state.chat_history)           
-### 
+      print(f"Question:{question}")
+      response_generator = transform(question, state.chat_history)  
+      response = ''.join(response_generator)
+      print(f"Response:{response}")
+      time.sleep(1)       
 
 @me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
@@ -72,6 +87,8 @@ def page():
           color="primary",
           style=me.Style(font_weight="bold"),
         )
+        if state.uploaded:
+          me.text("File uploaded!")
         me.button(
            label="Rate Article on Factuality Factors",
            on_click=ask_predefined_questions,
@@ -96,24 +113,21 @@ def page():
 
 def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
-    print(history)
-    chat_history = "\n".join(f"{message.role}: {message.content}" for message in history)
+    chat_history = ""
+    if state.file and state.uploaded:
+       chat_history += f"\nuser: {pdf_to_text(state.file)}"
+    chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
     full_input = f"{chat_history}\nuser: {input}"
-
+    time.sleep(1)
+    # print(full_input)
     response = model.generate_content(full_input, stream=True)
-
-    full_response_text = ""
     for chunk in response:
         text_chunk = chunk.text
-        
-        full_response_text += text_chunk + "\n"  # Collecting all text chunks
-    # state.chat_history.append(mel.ChatMessage(role="assistant", content=full_response_text))
-    overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', full_response_text, re.IGNORECASE)
-    overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', full_response_text, re.IGNORECASE)
-    if overall_sens_match:
-        state.overall_sens_score = float(overall_sens_match.group(1))
-        print(state.overall_sens_score)
-    if overall_stance_match:
-        state.overall_stance_score = float(overall_stance_match.group(1))
+        yield chunk.text
+        overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+        overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+        if overall_sens_match:
+            state.overall_sens_score = float(overall_sens_match.group(1))
+        if overall_stance_match:
+            state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
-    return full_response_text.splitlines()
