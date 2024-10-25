@@ -191,5 +191,6 @@ def transform(input: str, history: list[mel.ChatMessage]):
         if overall_stance_match:
             state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
+    # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score]), 2)
 
