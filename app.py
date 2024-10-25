@@ -8,6 +8,12 @@ import mesop.labs as mel
 from dataclasses import field
 import time
 from PyPDF2 import PdfReader
+import pickle
+from transformers import pipeline
+from textblob import TextBlob
+import pandas as pd
+import xgboost as xgb
+import numpy as np
 
 from questions import predefined_questions
 
@@ -47,6 +53,8 @@ class State:
   overall_stance_score: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
   chat_history: list[mel.ChatMessage]
+  overall_naive_realism_score: float = 0.0
+  veracity: float = 0.0
 
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
@@ -67,34 +75,77 @@ def pdf_to_text(user_pdf):
 # citation: https://www.geeksforgeeks.org/convert-pdf-to-txt-file-using-python/
 
 def ask_predefined_questions(event: me.ClickEvent):
-    state = me.state(State)
-    for question in state.predefined_questions:
-      print(f"Question:{question}")
-      response_generator = transform(question, state.chat_history)  
-      response = ''.join(response_generator)
-      print(f"Response:{response}")
-      time.sleep(1)       
+  state = me.state(State)
+  for question in state.predefined_questions:
+    print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    print(f"Response:{response}")
+    time.sleep(5) 
+
+def ask_pred_ai(event: me.ClickEvent):
+  state = me.state(State)
+  loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
+  response_generator = transform("Give just the title of the article.", state.chat_history)
+  response = ''.join(response_generator)
+  print(response)
+  time.sleep(3)
+
+  subject_score = TextBlob(response).sentiment.subjectivity
+  sentiment_analyzer = pipeline('sentiment-analysis', truncation=True)
+  confidence = sentiment_analyzer(response)[0]['score']
+
+  with open('data/speaker_reput_dict.pkl', 'rb') as file:
+    speaker_reput_dict = pickle.load(file)
+  
+  speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
+  speaker = ''.join(speaker_generator)
+  speaker = ('-'.join(speaker.split())).lower()
+  speaker_reput = speaker_reput_dict.get(speaker)
+  print(speaker)
+
+  df = pd.DataFrame({
+     'barely_true_ratio': None if speaker_reput is None else speaker_reput[0],
+     'false_ratio': None if speaker_reput is None else speaker_reput[1],
+     'half_true_ratio': None if speaker_reput is None else speaker_reput[2],
+     'mostly_true_ratio': None if speaker_reput is None else speaker_reput[3],
+     'pants_on_fire_ratio': None if speaker_reput is None else speaker_reput[4],
+     'confidence': confidence,
+     'subjectivity': subject_score,
+    }, index=[0])
+  # {'barely-true': 0, 'false': 1, 'half-true': 2, 'mostly-true': 3, 'pants-fire': 4, 'true': 5}
+  prediction = loaded_model.predict(df.loc[0:0])[0]
+  prediction_to_score = {5: 10, 4: 0, 0: 4, 1: 2, 2: 6, 3: 8}
+  state.overall_naive_realism_score = prediction_to_score[prediction]
+  state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score]), 2)
+
 
 @me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
     state = me.state(State)
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
-        me.uploader(
-          label="Upload PDF",
-          accepted_file_types=[".pdf"],
-          on_upload=handle_upload,
-          type="flat",
+      me.uploader(
+        label="Upload PDF",
+        accepted_file_types=[".pdf"],
+        on_upload=handle_upload,
+        type="flat",
+        color="primary",
+        style=me.Style(font_weight="bold"),
+      )
+      if state.uploaded:
+        me.text("File uploaded!")
+      me.button(
+          label="Rate Factuality Factors with GenAI",
+          on_click=ask_predefined_questions,
           color="primary",
-          style=me.Style(font_weight="bold"),
-        )
-        if state.uploaded:
-          me.text("File uploaded!")
-        me.button(
-           label="Rate Article on Factuality Factors",
-           on_click=ask_predefined_questions,
-           color="primary",
-           style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
-        )
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
+      me.button(
+          label="Rate Factuality Factors with PredAI",
+          on_click=ask_pred_ai,
+          color="accent",
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
 
     with me.box(style=me.Style(height="50%")):
       mel.chat(
@@ -103,13 +154,21 @@ def page():
         bot_user="Chanly", # Short for the Vietnamese word for Truth
       )
 
-    with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around")):
+    with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around", flex_wrap="wrap")):
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_sens_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Democratic Stance: {state.overall_stance_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_stance_score*10, color='primary')
+      with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
+        me.text(f"Overall Naive Realism: {state.overall_naive_realism_score}", type="headline-5")
+        me.progress_bar(mode="determinate", value=state.overall_naive_realism_score*10, color='primary')
+    # veracity is calculated based on the mean of the factuality factors. If higher number in factuality factor correlates with more veracity, then we use that number. If the opposite behavior happens (aka if sensationalism is high in an article), we do (10 - factuality score)
+    with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
+      with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
+        me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
+        me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
 def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
@@ -131,3 +190,5 @@ def transform(input: str, history: list[mel.ChatMessage]):
         if overall_stance_match:
             state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
+    state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score]), 2)
+
