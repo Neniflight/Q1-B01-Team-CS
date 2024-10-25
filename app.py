@@ -101,6 +101,7 @@ def ask_pred_ai(event: me.ClickEvent):
   speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
   speaker = ''.join(speaker_generator)
   speaker = ('-'.join(speaker.split())).lower()
+  #check if speaker has new line characters
   speaker_reput = speaker_reput_dict.get(speaker)
   print(speaker)
 
