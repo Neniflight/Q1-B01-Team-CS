@@ -12,6 +12,23 @@
 # File Description #
 Each file on this repo has its own purpose! We will explain what each file does below
 * `data`: Contains our dataset, liar plus, and other data needed to work notebooks.
+  *  `liar plus dataset`: a dataframe that contains multiple columns of attibutes that is extracted from different text including the varying levels of misinformation labels
+     *  `Column 1`: the ID of the statement ([ID].json).
+     *  `Column 2`: the varying levels of misinformation
+     *  `Column 3`: the title of the text
+     *  `Column 4`: the subject(s) of the text (what categories the articles fall under)
+     *  `Column 5`: the speaker/author.
+     *  `Column 6`: the speaker's/author's job title.
+     *  `Column 7`: the state the text was published/released/taken place
+     *  `Column 8`: the party affiliation of the speaker/author
+     *  `Columns 9-13`: the total credit history count, including the current statement.
+        *  `column 9`: barely true counts.
+        *  `column 10`: false counts.
+        *  `column 11`: half true counts.
+        *  `column 12`: mostly true counts.
+        *  `column 13`: pants on fire counts.
+     * `Column 14`: the context (venue/location/medium of the text).
+     * `Column 15`: extracted justification that justifies the text's level of misinformation
   * `chunks.pkl`: List object that contains chunks from an article that contains misinformation
   * `speaker_reput_dict.pkl`: Dictionary object where the keys are speakers and the values are lists that contain the reputation of each speaker
 * `model`: Contains pickles of our models
