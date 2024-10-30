@@ -15,7 +15,7 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * `chunks.pkl`: List object that contains chunks from an article that contains misinformation
   * `speaker_reput_dict.pkl`: Dictionary object where the keys are speakers and the values are lists that contain the reputation of each speaker
 * `model`: Contains pickles of our models
-  *` XGModel.sav`: XGBoosted Decision Tree that predicts veracity based on Naive Realism
+  * ` XGModel.sav`: XGBoosted Decision Tree that predicts veracity based on Naive Realism
 * `.gitignore:` Tell github which files not to track like env or pycache files.
 * `.python-version`: Your python version should be 3.12.7 for this code to work
 * `README.md`: What you are reading right now :)
