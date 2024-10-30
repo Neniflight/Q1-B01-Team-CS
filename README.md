@@ -7,6 +7,25 @@
 * half-true
 * mostly-true
 * true
+
+---
+# File Description #
+Each file on this repo has its own purpose! We will explain what each file does below
+* `data`: Contains our dataset, liar plus, and other data needed to work notebooks.
+  * `chunks.pkl`: List object that contains chunks from an article that contains misinformation
+  * `speaker_reput_dict.pkl`: Dictionary object where the keys are speakers and the values are lists that contain the reputation of each speaker
+* `model`: Contains pickles of our models
+  *` XGModel.sav`: XGBoosted Decision Tree that predicts veracity based on Naive Realism
+* `.gitignore:` Tell github which files not to track like env or pycache files.
+* `.python-version`: Your python version should be 3.12.7 for this code to work
+* `README.md`: What you are reading right now :)
+* `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
+* `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from. 
+* `chunking_and_chroma`: A Python Notebook that inputs these chunks into a vector database known as Chroma
+* `environmental_mac.yml`: Used to download your environment to have all the packages to make this work. This env is for Mac devices
+* `environmental_win.yml`: Used to download your environment to have all the packages to make this work. This env is for Window devices
+* `questions.py`: Python file that contains a predefined list of questions to ask to the Generative AI. 
+
 ---
 # How to Get Started
 1. Clone this repo with the following code:
