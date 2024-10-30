@@ -101,6 +101,7 @@ def ask_pred_ai(event: me.ClickEvent):
   speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
   speaker = ''.join(speaker_generator)
   speaker = ('-'.join(speaker.split())).lower()
+  speaker = speaker.replace("\n", "").replace(" ", "")
   #check if speaker has new line characters
   speaker_reput = speaker_reput_dict.get(speaker)
   print(speaker)
@@ -178,7 +179,7 @@ def transform(input: str, history: list[mel.ChatMessage]):
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
     full_input = f"{chat_history}\nuser: {input}"
-    time.sleep(1)
+    time.sleep(2)
     # print(full_input)
     response = model.generate_content(full_input, stream=True)
     for chunk in response:
