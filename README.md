@@ -57,13 +57,21 @@ git clone {github_repo_link}
 ```bash
 GEMINI_API_KEY="{API_KEY}"
 ```
-3. Create the environment based on your OS. Make sure you are using 3.12.7 or earlier because Google AI Studio does not support Python 3.13
+3. Create the environment based on your OS. Make sure you are using 3.11.9 or earlier because Google AI Studio does not support Python 3.13 and wheel does not support 3.12
 ```bash
 conda env create -f environment_{respective_OS}.yml
 ```
-4. Start fighting against misinformation by starting the app
+4. Once done, you need to set up a ChromaDB database for the Google Gemini to base its responses off of. Run the `liar_plus_to_chroma.ipynb` in its entirety. Make sure you have Docker installed and running before you run this commahnd:
+```bash
+docker run -d --rm --name chromadb -v ./chroma:/chroma/chroma -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -p 8000:8000 chromadb/chroma:0.5.13 
+```
+5. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
 ```bash
 mesop app.py
+```
+6. Once you are done messing around with the tool. Stop the docker container by running:
+```bash
+docker stop chromadb
 ```
 ---
 # Members
