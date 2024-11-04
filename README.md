@@ -7,6 +7,46 @@
 * half-true
 * mostly-true
 * true
+
+---
+# File Description #
+Each file on this repo has its own purpose! We will explain what each file does below
+* `data`: Contains our dataset, liar plus, and other data needed to work notebooks.
+  *  `liar plus dataset`: a dataframe that contains multiple columns of attibutes that is extracted from different text including the varying levels of misinformation labels
+     *  `Column 1`: the ID of the statement ([ID].json).
+     *  `Column 2`: the varying levels of misinformation
+     *  `Column 3`: the title of the text
+     *  `Column 4`: the subject(s) of the text (what categories the articles fall under)
+     *  `Column 5`: the speaker/author.
+     *  `Column 6`: the speaker's/author's job title.
+     *  `Column 7`: the state the text was published/released/taken place
+     *  `Column 8`: the party affiliation of the speaker/author
+     *  `Columns 9-13`: the total credit history count, including the current statement.
+        *  `column 9`: barely true counts.
+        *  `column 10`: false counts.
+        *  `column 11`: half true counts.
+        *  `column 12`: mostly true counts.
+        *  `column 13`: pants on fire counts.
+     * `Column 14`: the context (venue/location/medium of the text).
+     * `Column 15`: extracted justification that justifies the text's level of misinformation
+  * `chunks.pkl`: List object that contains chunks from an article that contains misinformation
+  * `speaker_reput_dict.pkl`: Dictionary object where the keys are speakers and the values are lists that contain the reputation of each speaker
+* `model`: Contains our models
+  * ` XGModel.sav`: XGBoosted Decision Tree that predicts veracity based on Naive Realism
+  * ` social_cred_predAI.h5`: tensorflow Keras Neural Network that predicts social credibility score
+  * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score
+* `.gitignore:` Tell github which files not to track like env or pycache files.
+* `.python-version`: Your python version should be 3.12.7 for this code to work
+* `Pred_AI`: Predictive AI on jupyternotebook
+* `README.md`: What you are reading right now :)
+* `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
+* `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from. 
+* `chunking_and_chroma`: A Python Notebook that inputs these chunks into a vector database known as Chroma
+* `environmental_mac.yml`: Used to download your environment to have all the packages to make this work. This env is for Mac devices
+* `environmental_win.yml`: Used to download your environment to have all the packages to make this work. This env is for Window devices
+* `questions.py`: Python file that contains a predefined list of questions to ask to the Generative AI.
+* `social_credibility_predAI.py`: tensorflow keras neural network in python file to save and load on app.py
+
 ---
 # How to Get Started
 1. Clone this repo with the following code:
@@ -36,4 +76,4 @@ docker stop chromadb
 ---
 # Members
 * Calvin Nguyen: [Github](https://github.com/Neniflight), [Linkedin](https://www.linkedin.com/in/calvin-nguyen-data/)
-* Samantha Lin
+* Samantha Lin: [Github](https://github.com/Samanthalin0918), [Linkdein](https://www.linkedin.com/in/samantha-lin-3bb601271/)
