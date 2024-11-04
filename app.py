@@ -14,6 +14,7 @@ from textblob import TextBlob
 import pandas as pd
 import xgboost as xgb
 import numpy as np
+import chromadb
 
 from questions import predefined_questions
 
@@ -45,10 +46,14 @@ model = genai.GenerativeModel(
     system_instruction="You are trying to fight against misinformation by scoring different articles on their factuality factors. In your responses, do not use copyrighted material and be concise. Do not assess an article until you are given a factuality factor to grade on.",
 )
 
+chroma_client = chromadb.HttpClient(host="localhost", port=8000)
+collection = chroma_client.get_collection("Misinformation")
+
 @me.stateclass
 class State:
   file: me.UploadedFile
   uploaded: bool = False
+  article_title: str = ""
   overall_sens_score: float = 0.0
   overall_stance_score: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
@@ -63,6 +68,7 @@ def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
   state.uploaded = True
+  get_headline(state.chat_history)
 
 def pdf_to_text(user_pdf):
     reader = PdfReader(user_pdf)
@@ -86,8 +92,7 @@ def ask_predefined_questions(event: me.ClickEvent):
 def ask_pred_ai(event: me.ClickEvent):
   state = me.state(State)
   loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
-  response_generator = transform("Give just the title of the article.", state.chat_history)
-  response = ''.join(response_generator)
+  response = state.article_title
   print(response)
   time.sleep(3)
 
@@ -172,15 +177,36 @@ def page():
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
+def get_headline(history: list[mel.ChatMessage]):
+  state= me.state(State)
+  chat_history = ""
+  if state.file and state.uploaded:
+    chat_history += f"\nuser: {pdf_to_text(state.file)}"
+  chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
+  full_input = f"{chat_history}\nuser: Give just the title of the article."
+  time.sleep(2)
+  response = model.generate_content(full_input, stream=True)
+  full_response = "".join(chunk.text for chunk in response)
+  state.article_title= full_response
+  state.chat_history = history
+
 def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
     chat_history = ""
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-    full_input = f"{chat_history}\nuser: {input}"
-    time.sleep(2)
-    # print(full_input)
+
+    results = collection.query(query_texts=[state.article_title],
+                                     n_results=3,
+                                     where=
+                                     {
+                                        "label": "true"
+                                     })
+    chromadb_info = "\n".join(results['documents'][0])
+
+    full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+    time.sleep(4)
     response = model.generate_content(full_input, stream=True)
     for chunk in response:
         text_chunk = chunk.text
