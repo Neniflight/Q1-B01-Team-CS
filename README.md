@@ -17,11 +17,11 @@ git clone {github_repo_link}
 ```bash
 GEMINI_API_KEY="{API_KEY}"
 ```
-3. Create the environment based on your OS. Make sure you are using 3.12.7 or earlier because Google AI Studio does not support Python 3.13
+3. Create the environment based on your OS. Make sure you are using 3.11.9 or earlier because Google AI Studio does not support Python 3.13 and wheel does not support 3.12
 ```bash
 conda env create -f environment_{respective_OS}.yml
 ```
-4. Start fighting against misinformation by starting the app
+4. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. 
 ```bash
 mesop app.py
 ```
