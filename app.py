@@ -22,9 +22,6 @@ from questions import predefined_questions
 load_dotenv()
 genai.configure(api_key="AIzaSyCEdUpoG4Bs5QiZOcu2FZR7VNx719ZUifI")
 
-import mesop as me
-import mesop.labs as mel
-
 generation_config = {
     "max_output_tokens": 4000, # less output, means faster
     "response_mime_type": "text/plain",
@@ -91,8 +88,6 @@ def ask_predefined_questions(event: me.ClickEvent):
     print(f"Response:{response}")
     time.sleep(5) 
     
-    
-
 def ask_pred_ai(event: me.ClickEvent):
   state = me.state(State)
   loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
@@ -129,7 +124,7 @@ def ask_pred_ai(event: me.ClickEvent):
   state.overall_naive_realism_score = prediction_to_score[prediction]
   
   # load model
-  social_credit_model = keras.models.load_model("models/social_cred_predAI.h5")
+  social_credit_model = keras.models.load_model("model/social_cred_predAI.h5")
 
   # get info needed to input into model
   speaker_generator = transform("Give just the author of the article.", state.chat_history)
