@@ -37,7 +37,7 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score
 * `.gitignore:` Tell github which files not to track like env or pycache files.
 * `.python-version`: Your python version should be 3.12.7 for this code to work
-* `Pred_AI`: Predictive AI on jupyternotebook
+* `Pred_AI_notebook`: Predictive AI on jupyternotebook
 * `README.md`: What you are reading right now :)
 * `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
 * `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from. 
