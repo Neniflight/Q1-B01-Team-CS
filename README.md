@@ -12,7 +12,7 @@
 # File Description #
 Each file on this repo has its own purpose! We will explain what each file does below
 * `data`: Contains our dataset, liar plus, and other data needed to work notebooks.
-  *  `liar plus dataset`: a dataframe that contains multiple columns of attibutes that is extracted from different text including the varying levels of misinformation labels
+  *  `liar plus dataset (test2, train2, val2)`: a dataframe that contains multiple columns of attibutes that is extracted from different text including the varying levels of misinformation labels
      *  `Column 1`: the ID of the statement ([ID].json).
      *  `Column 2`: the varying levels of misinformation
      *  `Column 3`: the title of the text
@@ -36,8 +36,8 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * ` social_cred_predAI.h5`: tensorflow Keras Neural Network that predicts social credibility score
   * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score
 * `.gitignore:` Tell github which files not to track like env or pycache files.
-* `.python-version`: Your python version should be 3.12.7 for this code to work
-* `Pred_AI_notebook`: Predictive AI on jupyternotebook
+* `.python-version`: Your python version should be 3.11.9 for app.py to work
+* `Pred_AI_notebook`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and 
 * `README.md`: What you are reading right now :)
 * `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
 * `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from. 
