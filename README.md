@@ -63,7 +63,8 @@ conda env create -f environment_{respective_OS}.yml
 ```
 4. Once done, you need to set up a ChromaDB database for the Google Gemini to base its responses off of. Run the `liar_plus_to_chroma.ipynb` in its entirety. Make sure you have Docker installed and running before you run this command:
 ```bash
-docker run -d --rm --name chromadb -v ./chroma:/chroma/chroma -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -p 8000:8000 chromadb/chroma:0.5.13 
+docker pull chromadb/chroma
+docker run --rm -p 8000:8000 --name chromadb -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -v ./chroma:/chroma/chroma chromadb/chroma 
 ```
 5. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
 ```bash
