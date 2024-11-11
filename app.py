@@ -264,18 +264,21 @@ def ask_pred_ai_social_cred(event: me.ClickEvent):
   # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
 # get info needed to input into model
-  speaker_generator = transform("Give just the author of the article.", state.chat_history)
-  time.sleep(5)
-  speaker_response = ''.join(speaker_generator)
-  print("speaker: " + speaker_response)
-  context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + unique_contexts, state.chat_history)
-  context_response = ''.join(context_generator)
-  print("context: " + context_response)
-  time.sleep(5)
-  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + unique_party, state.chat_history)
-  party_affli_response = ''.join(party_affli_generator)
-  print("party_affli: " + party_affli_response)
-  time.sleep(5)
+  # speaker_generator = transform("Give just the author of the article.", state.chat_history)
+  # time.sleep(5)
+  # speaker_response = ''.join(speaker_generator)
+  # speaker_response = speaker_response.replace("\n", "")
+  # print("speaker: " + speaker_response)
+  # context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + unique_contexts, state.chat_history)
+  # context_response = ''.join(context_generator)
+  # context_response = context_response.replace("\n", "")
+  # print("context: " + context_response)
+  # time.sleep(5)
+  # party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + unique_party, state.chat_history)
+  # party_affli_response = ''.join(party_affli_generator)
+  # party_affli_response = party_affli_response.replace('\n', '')
+  # print("party_affli: " + party_affli_response)
+  # time.sleep(5)
 
   # Please ignore, this is for testing purposes.
   speaker_response = "scott-surovell"  
@@ -338,15 +341,15 @@ def ask_pred_ai_social_cred(event: me.ClickEvent):
     # input_x = input_x.to(device)
     print("input_x len : " + str(len(input_x[0])))
     prediction = social_credit_model(input_x[0])
-    # prediciton_list = prediction
-    # for i in range(len(prediciton_list)):
-    #    if prediciton_list[i] == max(prediciton_list):
-    #       state.overall_social_credibility = i*2
+    prediciton_list = prediction.tolist()
+    for i in range(len(prediciton_list)):
+       if prediciton_list[i] == max(prediciton_list):
+          state.overall_social_credibility = i*2
     print(prediction)
-    state.overall_social_credibility = prediction
+    # state.overall_social_credibility = prediction
   else:
     state.overall_social_credibility = (speaker_score + context_score + party_affli_score) / 3
-
+  print(f"This is overall_social_credibility: {state.overall_social_credibility}")
   state.overall_social_credibility = round(state.overall_social_credibility, 2)
   
   print(state.overall_social_credibility)
