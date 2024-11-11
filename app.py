@@ -16,17 +16,17 @@ from torch.utils.data import DataLoader
 from torch import optim as optim
 from social_credibility_predAI_pytorch import speaker_context_party_nn
 import backoff
-# import tensorflow
-# from tensorflow import keras
-# import keras
+from transformers import pipeline
+from textblob import TextBlob
+import pandas as pd
+import xgboost as xgb
+import numpy as np
+import chromadb
 from questions import predefined_questions
 # import tensorflow_model_optimization as tfmot
 
 load_dotenv()
 genai.configure(api_key="AIzaSyDDIbknjF_QpH8fcI49DekoHTPcoDjsOJg")
-
-import mesop as me
-import mesop.labs as mel
 
 generation_config = {
     "max_output_tokens": 4000, # less output, means faster
@@ -50,15 +50,21 @@ model = genai.GenerativeModel(
     system_instruction="You are trying to fight against misinformation by scoring different articles on their factuality factors. In your responses, do not use copyrighted material and be concise. Do not assess an article until you are given a factuality factor to grade on.",
 )
 
+chroma_client = chromadb.HttpClient(host="localhost", port=8000)
+collection = chroma_client.get_collection("Misinformation")
+
 @me.stateclass
 class State:
   file: me.UploadedFile
   uploaded: bool = False
+  article_title: str = ""
   overall_sens_score: float = 0.0
   overall_stance_score: float = 0.0
   overall_social_credibility: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
   chat_history: list[mel.ChatMessage]
+  overall_naive_realism_score: float = 0.0
+  veracity: float = 0.0
 
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
@@ -67,6 +73,7 @@ def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
   state.uploaded = True
+  get_headline(state.chat_history)
 
 def pdf_to_text(user_pdf):
   reader = PdfReader(user_pdf)
@@ -86,20 +93,69 @@ def ask_predefined_questions(event: me.ClickEvent):
     response = ''.join(response_generator)
     # print(f"Response:{response}")
     time.sleep(5)   
-
-# @backoff.on_exception(backoff.constant, ValueError, interval=1, max_tries=10)
-def ask_pred_ai_social_cred(event: me.ClickEvent):
+    
+def ask_pred_ai(event: me.ClickEvent):
   state = me.state(State)
+  loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
+  response = state.article_title
+  print(response)
+
+  subject_score = TextBlob(response).sentiment.subjectivity
+  sentiment_analyzer = pipeline('sentiment-analysis', truncation=True)
+  confidence = sentiment_analyzer(response)[0]['score']
+
+  with open('data/speaker_reput_dict.pkl', 'rb') as file:
+    speaker_reput_dict = pickle.load(file)
+  
+  speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
+  speaker = ''.join(speaker_generator)
+  speaker = ('-'.join(speaker.split())).lower()
+  speaker = speaker.replace("\n", "").replace(" ", "")
+  #check if speaker has new line characters
+  speaker_reput = speaker_reput_dict.get(speaker)
+  print(speaker)
+
+  df = pd.DataFrame({
+     'barely_true_ratio': None if speaker_reput is None else speaker_reput[0],
+     'false_ratio': None if speaker_reput is None else speaker_reput[1],
+     'half_true_ratio': None if speaker_reput is None else speaker_reput[2],
+     'mostly_true_ratio': None if speaker_reput is None else speaker_reput[3],
+     'pants_on_fire_ratio': None if speaker_reput is None else speaker_reput[4],
+     'confidence': confidence,
+     'subjectivity': subject_score,
+    }, index=[0])
+  # {'barely-true': 0, 'false': 1, 'half-true': 2, 'mostly-true': 3, 'pants-fire': 4, 'true': 5}
+  prediction = loaded_model.predict(df.loc[0:0])[0]
+  prediction_to_score = {5: 10, 4: 0, 0: 4, 1: 2, 2: 6, 3: 8}
+  state.overall_naive_realism_score = prediction_to_score[prediction]
+  
   # load model
-  # social_credit_model = keras.models.load_model("models/social_cred_predAI.h5")
-  # print(sklearn.__version__)
   social_credit_model = torch.load("speaker_context_party_model_pytorch", weights_only=False)
   print("hello loaded model!")
   # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
 
   # EDA
-  import pandas as pd
-  import numpy as np
+  social_credit_model = keras.models.load_model("model/social_cred_predAI.h5")
+
+  # get info needed to input into model
+  speaker_generator = transform("Give just the author of the article.", state.chat_history)
+  time.sleep(5)
+  speaker_response = ''.join(speaker_generator)
+  print("speaker: " + speaker_response)
+  context_generator = transform("Give just what type of text is this article without extra text or special characters.", state.chat_history)
+  context_response = ''.join(context_generator)
+  print("context: " + context_response)
+  time.sleep(5)
+  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters.", state.chat_history)
+  party_affli_response = ''.join(party_affli_generator)
+  print("party_affli: " + party_affli_response)
+  time.sleep(5)
+
+  # Please ignore, this is for chekcing purposes and also for not using up API resource when I need to check features.
+  # speaker_response = "scott-surovell"  
+  # context_response = "a floor speech"
+  # party_affli_response = "democrat"
+
   train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
   first_data = train_data.columns
   train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
@@ -264,26 +320,26 @@ def ask_pred_ai_social_cred(event: me.ClickEvent):
   # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
 # get info needed to input into model
-  # speaker_generator = transform("Give just the author of the article.", state.chat_history)
-  # time.sleep(5)
-  # speaker_response = ''.join(speaker_generator)
-  # speaker_response = speaker_response.replace("\n", "")
-  # print("speaker: " + speaker_response)
-  # context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + unique_contexts, state.chat_history)
-  # context_response = ''.join(context_generator)
-  # context_response = context_response.replace("\n", "")
-  # print("context: " + context_response)
-  # time.sleep(5)
-  # party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + unique_party, state.chat_history)
-  # party_affli_response = ''.join(party_affli_generator)
-  # party_affli_response = party_affli_response.replace('\n', '')
-  # print("party_affli: " + party_affli_response)
-  # time.sleep(5)
+  speaker_generator = transform("Give just the author of the article.", state.chat_history)
+  time.sleep(5)
+  speaker_response = ''.join(speaker_generator)
+  speaker_response = speaker_response.replace("\n", "")
+  print("speaker: " + speaker_response)
+  context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + unique_contexts, state.chat_history)
+  context_response = ''.join(context_generator)
+  context_response = context_response.replace("\n", "")
+  print("context: " + context_response)
+  time.sleep(5)
+  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + unique_party, state.chat_history)
+  party_affli_response = ''.join(party_affli_generator)
+  party_affli_response = party_affli_response.replace('\n', '')
+  print("party_affli: " + party_affli_response)
+  time.sleep(5)
 
   # Please ignore, this is for testing purposes.
-  speaker_response = "scott-surovell"  
-  context_response = "speech"
-  party_affli_response = "democrat"
+#   speaker_response = "scott-surovell"  
+#   context_response = "speech"
+#   party_affli_response = "democrat"
 
   # EDA imported Speaker
   speaker_response = str.lower(speaker_response.replace(" ","-"))
@@ -353,32 +409,31 @@ def ask_pred_ai_social_cred(event: me.ClickEvent):
   state.overall_social_credibility = round(state.overall_social_credibility, 2)
   
   print(state.overall_social_credibility)
-
+  state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
 @me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
     state = me.state(State)
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
-        me.uploader(
-          label="Upload PDF",
-          accepted_file_types=[".pdf"],
-          on_upload=handle_upload,
-          type="flat",
+      me.uploader(
+        label="Upload PDF",
+        accepted_file_types=[".pdf"],
+        on_upload=handle_upload,
+        type="flat",
+        color="primary",
+        style=me.Style(font_weight="bold"),
+      )
+      if state.uploaded:
+        me.text("File uploaded!")
+      me.button(
+          label="Rate Factuality Factors with GenAI",
+          on_click=ask_predefined_questions,
           color="primary",
-          style=me.Style(font_weight="bold"),
-        )
-        if state.uploaded:
-          me.text("File uploaded!")
-        me.button(
-           label="Rate Article on Factuality Factors",
-           on_click=ask_predefined_questions,
-           color="primary",
-           style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
-        )
-
-        me.button(
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
+      me.button(
           label="Rate Factuality Factors with PredAI",
-          on_click=ask_pred_ai_social_cred,
+          on_click=ask_pred_ai,
           color="accent",
           style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
       )
@@ -390,7 +445,7 @@ def page():
         bot_user="Chanly", # Short for the Vietnamese word for Truth
       )
 
-    with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around")):
+    with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around", flex_wrap="wrap")):
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_sens_score*10, color='primary')
@@ -398,29 +453,56 @@ def page():
         me.text(f"Overall democratic Stance: {state.overall_stance_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_stance_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
+        me.text(f"Overall Naive Realism: {state.overall_naive_realism_score}", type="headline-5")
+        me.progress_bar(mode="determinate", value=state.overall_naive_realism_score*10, color='primary')
+      with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Social credibility: {state.overall_social_credibility}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_social_credibility*10, color='primary')
+    # veracity is calculated based on the mean of the factuality factors. If higher number in factuality factor correlates with more veracity, then we use that number. If the opposite behavior happens (aka if sensationalism is high in an article), we do (10 - factuality score)
+    with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
+      with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
+        me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
+        me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
+def get_headline(history: list[mel.ChatMessage]):
+  state= me.state(State)
+  chat_history = ""
+  if state.file and state.uploaded:
+    chat_history += f"\nuser: {pdf_to_text(state.file)}"
+  chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
+  full_input = f"{chat_history}\nuser: Give just the title of the article."
+  time.sleep(2)
+  response = model.generate_content(full_input, stream=True)
+  full_response = "".join(chunk.text for chunk in response)
+  state.article_title= full_response
+  state.chat_history = history
+  
 def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
     chat_history = ""
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-    full_input = f"{chat_history}\nuser: {input}"
-    time.sleep(5)
-    # print(full_input)
+    results = collection.query(query_texts=[state.article_title],
+                                     n_results=3,
+                                     where=
+                                     {
+                                        "label": "true"
+                                     })
+    chromadb_info = "\n".join(results['documents'][0])
+
+    full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+    time.sleep(4)
     response = model.generate_content(full_input, stream=True)
     for chunk in response:
         text_chunk = chunk.text
         yield chunk.text
         overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
         overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-        overall_social_credibility = re.search(r'overall\s*social\s*credibility\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
         if overall_sens_match:
             state.overall_sens_score = float(overall_sens_match.group(1))
         if overall_stance_match:
             state.overall_stance_score = float(overall_stance_match.group(1))
-        if overall_social_credibility:
-            state.overall_social_credibility = float(overall_social_credibility.group(1))
     state.chat_history = history
+    # FIX bug where if model is asked questions. veracity will automatically populate
+    state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
