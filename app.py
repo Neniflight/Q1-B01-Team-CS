@@ -26,7 +26,8 @@ from questions import predefined_questions
 # import tensorflow_model_optimization as tfmot
 
 load_dotenv()
-genai.configure(api_key="AIzaSyDDIbknjF_QpH8fcI49DekoHTPcoDjsOJg")
+api_key = os.getenv("API_KEY")
+genai.configure(api_key=api_key)
 
 generation_config = {
     "max_output_tokens": 4000, # less output, means faster
@@ -101,7 +102,7 @@ def ask_pred_ai(event: me.ClickEvent):
   print(response)
 
   subject_score = TextBlob(response).sentiment.subjectivity
-  sentiment_analyzer = pipeline('sentiment-analysis', truncation=True)
+  sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', truncation=True)
   confidence = sentiment_analyzer(response)[0]['score']
 
   with open('data/speaker_reput_dict.pkl', 'rb') as file:
@@ -130,26 +131,13 @@ def ask_pred_ai(event: me.ClickEvent):
   state.overall_naive_realism_score = prediction_to_score[prediction]
   
   # load model
-  social_credit_model = torch.load("speaker_context_party_model_pytorch", weights_only=False)
+
+  social_credit_model = speaker_context_party_nn()
+  state_dict = torch.load("model/speaker_context_party_model_state.pth")
+  social_credit_model.load_state_dict(state_dict)
   print("hello loaded model!")
   # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
 
-  # EDA
-  social_credit_model = keras.models.load_model("model/social_cred_predAI.h5")
-
-  # get info needed to input into model
-  speaker_generator = transform("Give just the author of the article.", state.chat_history)
-  time.sleep(5)
-  speaker_response = ''.join(speaker_generator)
-  print("speaker: " + speaker_response)
-  context_generator = transform("Give just what type of text is this article without extra text or special characters.", state.chat_history)
-  context_response = ''.join(context_generator)
-  print("context: " + context_response)
-  time.sleep(5)
-  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters.", state.chat_history)
-  party_affli_response = ''.join(party_affli_generator)
-  print("party_affli: " + party_affli_response)
-  time.sleep(5)
 
   # Please ignore, this is for chekcing purposes and also for not using up API resource when I need to check features.
   # speaker_response = "scott-surovell"  
@@ -157,7 +145,6 @@ def ask_pred_ai(event: me.ClickEvent):
   # party_affli_response = "democrat"
 
   train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
-  first_data = train_data.columns
   train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
                      'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
                     'pants on fire counts', 'context', 'extracted justification']
@@ -315,22 +302,18 @@ def ask_pred_ai(event: me.ClickEvent):
   # drop the empty outputs, weird/unique context
   modified_label = modified_label[modified_label['context'] != ""]
 
-  unique_contexts = modified_label.context.unique()
-  unique_party = modified_label['party affiliation'].unique()
+  unique_contexts = list(modified_label.context.unique())
+  unique_party = list(modified_label['party affiliation'].unique())
   # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
 # get info needed to input into model
-  speaker_generator = transform("Give just the author of the article.", state.chat_history)
-  time.sleep(5)
-  speaker_response = ''.join(speaker_generator)
-  speaker_response = speaker_response.replace("\n", "")
-  print("speaker: " + speaker_response)
-  context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + unique_contexts, state.chat_history)
+  speaker_response = speaker
+  context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + str(unique_contexts), state.chat_history)
   context_response = ''.join(context_generator)
   context_response = context_response.replace("\n", "")
   print("context: " + context_response)
   time.sleep(5)
-  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + unique_party, state.chat_history)
+  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + str(unique_party), state.chat_history)
   party_affli_response = ''.join(party_affli_generator)
   party_affli_response = party_affli_response.replace('\n', '')
   print("party_affli: " + party_affli_response)
@@ -483,15 +466,16 @@ def transform(input: str, history: list[mel.ChatMessage]):
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-    results = collection.query(query_texts=[state.article_title],
-                                     n_results=3,
-                                     where=
-                                     {
-                                        "label": "true"
-                                     })
-    chromadb_info = "\n".join(results['documents'][0])
-
-    full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+    # implementation with chromaDB goes here
+    # results = collection.query(query_texts=[state.article_title],
+    #                                  n_results=3,
+    #                                  where=
+    #                                  {
+    #                                     "label": "true"
+    #                                  })
+    # chromadb_info = "\n".join(results['documents'][0])
+    # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+    full_input = f"{chat_history}\nuser: {input}"
     time.sleep(4)
     response = model.generate_content(full_input, stream=True)
     for chunk in response:
