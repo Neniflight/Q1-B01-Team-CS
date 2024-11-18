@@ -192,9 +192,9 @@ from sklearn.preprocessing import OneHotEncoder
 
 # test_data = ohe_speaker_context_party_df[int(ohe_speaker_context_party_df.shape[0]*0.8):int(ohe_speaker_context_party_df.shape[0])]
 # test_label = ohe_label_df[int(ohe_speaker_context_party_df.shape[0]*0.8):int(ohe_speaker_context_party_df.shape[0])]
-# # citation: https://scikit-learn.org/dev/modules/generated/sklearn.preprocessing.OneHotEncoder.html
+# # # citation: https://scikit-learn.org/dev/modules/generated/sklearn.preprocessing.OneHotEncoder.html
 
-# PyTorch imports
+# # PyTorch imports
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -256,13 +256,14 @@ if __name__ == "__main__":
 #     loss_list.append(loss_func(prediction, y_label[i]))
 #     loss_func(prediction, y_label[i]).backward()
 #     optimizer.step()
-# # citation: https://www.youtube.com/watch?v=tHL5STNJKag
+#   print(epoch)
+# citation: https://www.youtube.com/watch?v=tHL5STNJKag
 
-# # save as pickle
-# # import pickle 
-# # with open('speaker_context_party_nn.pkl', 'wb') as f:  # open a text file
-# #     pickle.dump(speaker_context_party_model, f) # serialize the list
-# #     # f.close()
+# save as pickle
+# import pickle 
+# with open('speaker_context_party_nn.pkl', 'wb') as f:  # open a text file
+#     pickle.dump(speaker_context_party_model, f) # serialize the list
+#     # f.close()
 
-# # save model
-# torch.save(speaker_context_party_model,"speaker_context_party_model_pytorch")
+# save model
+# torch.save(speaker_context_party_model.state_dict(), "model/speaker_context_party_model_state.pth")
