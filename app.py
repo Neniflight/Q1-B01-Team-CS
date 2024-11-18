@@ -15,7 +15,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch import optim as optim
 from social_credibility_predAI_pytorch import speaker_context_party_nn
-import backoff
+# import backoff
 from transformers import pipeline
 from textblob import TextBlob
 import pandas as pd
@@ -23,6 +23,8 @@ import xgboost as xgb
 import numpy as np
 import chromadb
 from questions import predefined_questions
+from normal_prompting import normal_prompting_question
+from fcot_prompting import fcot_prompting_question
 # import tensorflow_model_optimization as tfmot
 
 load_dotenv()
@@ -63,9 +65,17 @@ class State:
   overall_stance_score: float = 0.0
   overall_social_credibility: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
+  normal_prompting_question: list = field(default_factory=lambda: normal_prompting_question)
+  fcot_prompting_question: list = field(default_factory=lambda: fcot_prompting_question)
   chat_history: list[mel.ChatMessage]
   overall_naive_realism_score: float = 0.0
   veracity: float = 0.0
+  overall_sens_normal_score: float = 0.0
+  overall_stance_normal_score: float = 0.0
+  overall_sens_fcot_score: float = 0.0
+  overall_stance_fcot_score: float = 0.0
+  normal_prompt_vs_fcot_prompt_log: dict[str, str] = field(default_factory=dict)
+  # citation for using dict: https://github.com/google/mesop/issues/814
 
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
@@ -93,7 +103,28 @@ def ask_predefined_questions(event: me.ClickEvent):
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
     # print(f"Response:{response}")
-    time.sleep(5)   
+    time.sleep(5)
+
+def ask_normal_prompting_questions(event: me.ClickEvent):
+  state = me.state(State)
+  for question in state.normal_prompting_question:
+    print("start asking normal prompting questions")
+    # print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    # print(f"Response:{response}")
+    time.sleep(5)
+
+def ask_fcot_prompting_questions(event: me.ClickEvent):
+  state = me.state(State)
+  for question in state.fcot_prompting_question:
+    print("start asking fcot prompting questions")
+    # print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    # print(f"Response:{response}")
+    time.sleep(5)
+
     
 def ask_pred_ai(event: me.ClickEvent):
   state = me.state(State)
@@ -131,7 +162,6 @@ def ask_pred_ai(event: me.ClickEvent):
   state.overall_naive_realism_score = prediction_to_score[prediction]
   
   # load model
-
   social_credit_model = speaker_context_party_nn()
   state_dict = torch.load("model/speaker_context_party_model_state.pth")
   social_credit_model.load_state_dict(state_dict)
@@ -415,6 +445,18 @@ def page():
           style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
       )
       me.button(
+          label="Ask Normal Prompt Questions",
+          on_click=ask_normal_prompting_questions,
+          color="primary",
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
+      me.button(
+          label="Ask fcot Prompt Questions",
+          on_click=ask_fcot_prompting_questions,
+          color="primary",
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
+      me.button(
           label="Rate Factuality Factors with PredAI",
           on_click=ask_pred_ai,
           color="accent",
@@ -466,6 +508,7 @@ def transform(input: str, history: list[mel.ChatMessage]):
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
+
     # implementation with chromaDB goes here
     # results = collection.query(query_texts=[state.article_title],
     #                                  n_results=3,
@@ -474,7 +517,13 @@ def transform(input: str, history: list[mel.ChatMessage]):
     #                                     "label": "true"
     #                                  })
     # chromadb_info = "\n".join(results['documents'][0])
+
+
     # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+    # time.sleep(4)
+
+    # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
+
     full_input = f"{chat_history}\nuser: {input}"
     time.sleep(4)
     response = model.generate_content(full_input, stream=True)
@@ -488,5 +537,27 @@ def transform(input: str, history: list[mel.ChatMessage]):
         if overall_stance_match:
             state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
+    # normal prompt get score
+    overall_sens_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    overall_stance_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    if overall_sens_normal_prompt_match:
+        state.overall_sens_normal_score = float(overall_sens_normal_prompt_match.group(1))
+    if overall_stance_normal_prompt_match:
+        state.overall_stance_normal_score = float(overall_stance_normal_prompt_match.group(1))
+    # fcot prompt get score
+    overall_sens_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    overall_stance_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    if overall_sens_fcot_prompt_match:
+        state.overall_sens_fcot_score = float(overall_sens_fcot_prompt_match.group(1))
+    if overall_stance_fcot_prompt_match:
+        state.overall_stance_fcot_score = float(overall_stance_fcot_prompt_match.group(1))
+    print('checking for bug')
+    print(state.overall_sens_fcot_score, state.overall_stance_fcot_score)
+    state.normal_prompt_vs_fcot_prompt_log['normal_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_normal_score),2)),
+                                                         "political_stance: " + str(round(float(state.overall_stance_normal_score),2))]
+    state.normal_prompt_vs_fcot_prompt_log['fcot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_fcot_score),2)),
+                                                             "political_stance: " + str(round(float(state.overall_stance_fcot_score), 2))]
+    print("####### prompt log ########")
+    print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
