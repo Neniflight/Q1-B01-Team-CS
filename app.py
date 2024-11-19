@@ -1,5 +1,6 @@
 import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import HarmCategory, HarmBlockThreshold, content_types
+from collections.abc import Iterable
 import os
 from dotenv import load_dotenv
 import re
@@ -45,6 +46,12 @@ safety_settings = {
   HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
   HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
 }
+
+def tool_config_from_mode(mode: str, fns: Iterable[str] = ()):
+    """Create a tool config with the specified function calling mode."""
+    return content_types.to_tool_config(
+        {"function_calling_config": {"mode": mode, "allowed_function_names": fns}}
+    )
 
 model = genai.GenerativeModel(
     model_name="gemini-1.5-pro-002",
@@ -489,6 +496,30 @@ def page():
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
+# Implemented with function calling
+@me.page(path="/combined", title="Pred and Generative")
+def page():
+  state = me.state(State)
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
+    me.text("Generative AI with function calling", type='headline-3')
+    me.uploader(
+      label="Upload PDF",
+      accepted_file_types=[".pdf"],
+      on_upload=handle_upload,
+      type="flat",
+      color="primary",
+      style=me.Style(font_weight="bold"),
+    )
+    if state.uploaded:
+      me.text("File uploaded!")
+  with me.box(style=me.Style(height="50%")):
+    mel.chat(
+      transform_fc, 
+      title="Gemini Misinformation Helper", 
+      bot_user="Chanly", # Short for the Vietnamese word for Truth
+    )
+
+    
 def get_headline(history: list[mel.ChatMessage]):
   state= me.state(State)
   chat_history = ""
@@ -508,7 +539,6 @@ def transform(input: str, history: list[mel.ChatMessage]):
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-
     # implementation with chromaDB goes here
     # results = collection.query(query_texts=[state.article_title],
     #                                  n_results=3,
@@ -561,3 +591,10 @@ def transform(input: str, history: list[mel.ChatMessage]):
     print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
+
+def transform_fc(input: str, history: list[mel.ChatMessage]):
+  state = me.state(State)
+  chat_history = ""
+  if state.file and state.uploaded:
+      chat_history += f"\nuser: {pdf_to_text(state.file)}"
+  chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
