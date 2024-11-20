@@ -108,20 +108,20 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
   state = me.state(State)
   for question in state.normal_prompting_question:
     print("start asking normal prompting questions")
-    # print(f"Question:{question}")
+    print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
-    # print(f"Response:{response}")
+    print(f"Response:{response}")
     time.sleep(5)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
   state = me.state(State)
   for question in state.fcot_prompting_question:
     print("start asking fcot prompting questions")
-    # print(f"Question:{question}")
+    print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
-    # print(f"Response:{response}")
+    print(f"Response:{response}")
     time.sleep(5)
 
     
@@ -162,6 +162,8 @@ def ask_pred_ai(event: me.ClickEvent):
   
   # load model
   social_credit_model = speaker_context_party_nn()
+  state_dict = torch.load("model/speaker_context_party_model_state.pth")
+  social_credit_model.load_state_dict(state_dict)
   print("hello loaded model!")
   # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
 
