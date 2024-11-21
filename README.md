@@ -33,8 +33,10 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * `speaker_reput_dict.pkl`: Dictionary object where the keys are speakers and the values are lists that contain the reputation of each speaker
 * `model`: Contains our models
   * ` XGModel.sav`: XGBoosted Decision Tree that predicts veracity based on Naive Realism
-  * ` social_cred_predAI.h5`: tensorflow Keras Neural Network that predicts social credibility score
-  * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score
+  * ` social_cred_predAI.h5`: tensorflow Keras Neural Network that predicts social credibility score **(not in use anymore)**
+  * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score **(not in use anymore)**
+  * `speaker_context_party_model_state.pth`: Saves the weights within the neural network to use again with Pytorch
+  * `speaker_context_party_nn.pkl`: Pickled model via Pytorch
 * `.gitignore:` Tell github which files not to track like env or pycache files.
 * `.python-version`: Your python version should be 3.11.9 for app.py to work
 * `Pred_AI_notebook`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and moved to social_credibility_predAI.py.
@@ -63,14 +65,13 @@ conda env create -f environment_{respective_OS}.yml
 ```
 4. Once done, you need to set up a ChromaDB database for the Google Gemini to base its responses off of. Run the `liar_plus_to_chroma.ipynb` in its entirety. Make sure you have Docker installed and running before you run this command:
 ```bash
-docker pull chromadb/chroma
-docker run --rm -p 8000:8000 --name chromadb -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -v ./chroma:/chroma/chroma chromadb/chroma 
+docker run --rm --name chromadb -v chroma_volume:/chroma/chroma -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -p 8000:8000 chromadb/chroma
 ```
 5. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
 ```bash
 mesop app.py
 ```
-6. Once you are done messing around with the tool. Stop the docker container by running:
+6. Once you are done messing around with the tool. Stop the docker container by running "^C" or:
 ```bash
 docker stop chromadb
 ```
