@@ -4,9 +4,24 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 nltk.download('vader_lexicon')
 
+def final_factuality_factor_score(microfactor_1:float, microfactor_2:float, microfactor_3:float):
+    """Averages the microfactors from a single factuality factor. This function should be used when combining into an overall score.
+    
+    Args:
+        microfactor_1: A float value from 1 to 10 that represents the score of the microfactor of a factuality factor. 
+        microfactor_2: A float value from 1 to 10 that represents the score of the microfactor of a factuality factor. 
+        microfactor_3: A float value from 1 to 10 that represents the score of the microfactor of a factuality factor. 
+    """
+    score = (microfactor_1 + microfactor_2 + microfactor_3) / 3
+    print(f"factuality_score: {score}")
+    return score
 
-def emotionality_analyzer(text:str):
-    """Analyzes text based on its emotionality and exaggeration"""
+def emotion_analyzer(text:str):
+    """Analyzes text based on its emotionality and exaggeration. This function should be used for the microfactor Emotion Analysis and the output is already scaled from 1 to 10.
+    
+    Args:
+        text: A string value that represents the article we are grading on. 
+    """
     emotion_analyzer = pipeline("text-classification", model="bhadresh-savani/distilbert-base-uncased-emotion", top_k=None)
     sia = SentimentIntensityAnalyzer()
 
@@ -28,9 +43,9 @@ def emotionality_analyzer(text:str):
     exaggeration_ratio = exaggeration_score / len(words)
     exaggeration_ratio = min(exaggeration_ratio * 10, 1)
 
-    final_score = ((1/3) * max_emotion_score) + ((1/3) * sentiment_intensity) + ((1/3) * exaggeration_ratio)
+    final_score = ((0.4) * max_emotion_score) + ((0.4) * sentiment_intensity) + ((0.2) * exaggeration_ratio)
     scaled_score = round(final_score * 10, 2)
-    print(f"emotionalaity_score: {scaled_score}")
+    print(f"emotion_score: {scaled_score}")
     return scaled_score
 
 # if __name__ == "__main__":
