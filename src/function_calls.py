@@ -1,8 +1,10 @@
+# Import packages
 from textblob import TextBlob
 from transformers import pipeline
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 nltk.download('vader_lexicon')
+# This py file contain function calls
 
 def final_factuality_factor_score(microfactor_1:float, microfactor_2:float, microfactor_3:float):
     """Averages the microfactors from a single factuality factor. This function should be used when combining into an overall score.
