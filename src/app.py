@@ -128,7 +128,7 @@ def ask_fcot_prompting_questions(event: me.ClickEvent):
     
 def ask_pred_ai(event: me.ClickEvent):
   state = me.state(State)
-  loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
+  loaded_model = pickle.load(open("../model/XGModel.sav", 'rb'))
   response = state.article_title
   print(response)
 
