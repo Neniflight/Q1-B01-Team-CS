@@ -15,7 +15,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch import optim as optim
 from social_credibility_predAI_pytorch import speaker_context_party_nn
-# import backoff
 from transformers import pipeline
 from textblob import TextBlob
 import pandas as pd
@@ -25,7 +24,6 @@ import chromadb
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
-# import tensorflow_model_optimization as tfmot
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
@@ -157,7 +155,7 @@ def ask_pred_ai(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
-  loaded_model = pickle.load(open("../model/XGModel.sav", 'rb'))
+  loaded_model = pickle.load(open("model/XGModel.sav", 'rb'))
   response = state.article_title
   print(response)
 
@@ -203,6 +201,7 @@ def ask_pred_ai(event: me.ClickEvent):
   # context_response = "a floor speech"
   # party_affli_response = "democrat"
 
+  # load data needed to do One Hot Encoding
   train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
   train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
                      'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
@@ -216,7 +215,6 @@ def ask_pred_ai(event: me.ClickEvent):
   modified_label.head()
 
   # clean up context
-  # write function to clean context
   import nltk
   from nltk.corpus import stopwords
   nltk.download('stopwords')
@@ -377,7 +375,7 @@ def ask_pred_ai(event: me.ClickEvent):
   unique_party = list(modified_label['party affiliation'].unique())
   # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
-# get info needed to input into model
+# get info (speaker, context, party affiliation) needed to input into model
   speaker_response = speaker
   context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + str(unique_contexts), state.chat_history)
   context_response = ''.join(context_generator)
@@ -395,7 +393,7 @@ def ask_pred_ai(event: me.ClickEvent):
 #   context_response = "speech"
 #   party_affli_response = "democrat"
 
-  # EDA imported Speaker
+  # One Hot Encode imported Speaker
   speaker_response = str.lower(speaker_response.replace(" ","-"))
   print(speaker_response)
   if speaker_response not in np.array(modified_label["speaker"].unique()):
@@ -407,7 +405,7 @@ def ask_pred_ai(event: me.ClickEvent):
     speaker_ohe = list(speaker_ohe.reshape(-1,1))
     print("speaker_ohe len: " + str(len(speaker_ohe)))
 
-  # EDA imported context
+  # One Hot Encode imported context
   context_response = str.lower(context_response)
   print(context_response)
   if context_response not in np.array(modified_label["context"].unique()):
@@ -419,7 +417,7 @@ def ask_pred_ai(event: me.ClickEvent):
     context_ohe = list(context_ohe.reshape(-1,1))
     print("context_ohe len: " + str(len(context_ohe)))
 
-  # EDA imported Party Affiliation
+  # One Hot Encode imported Party Affiliation
   party_affli_response = str.lower(party_affli_response.replace(" ","-"))
   print(party_affli_response)
   if party_affli_response not in np.array(modified_label["party affiliation"].unique()):
@@ -431,14 +429,14 @@ def ask_pred_ai(event: me.ClickEvent):
     party_affli_ohe = list(party_affli_ohe.reshape(-1,1))
     print("party_affli_ohe len: " + str(len(party_affli_ohe)))
 
-  # get device
-  device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-  )
+  # get device for the social_credit_model
+  # device = (
+  #   "cuda"
+  #   if torch.cuda.is_available()
+  #   else "mps"
+  #   if torch.backends.mps.is_available()
+  #   else "cpu"
+  # )
 
   # implement model prediction
   if speaker_response in np.array(modified_label["speaker"]) and context_response in np.array(modified_label["context"]) and party_affli_response in np.array(modified_label["party affiliation"]):
@@ -462,13 +460,13 @@ def ask_pred_ai(event: me.ClickEvent):
   print(f"This is overall_social_credibility: {state.overall_social_credibility}")
   state.overall_social_credibility = round(state.overall_social_credibility, 2)
   
+  # calculate overall veracity score
   print(state.overall_social_credibility)
   state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
 @me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
-    """
-    setting up the mesop interface including the chatbox, buttons, and scores bars for each factuality factors
+    """setting up the mesop interface including the chatbox, buttons, and scores bars for each factuality factors
     """
     state = me.state(State)
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
@@ -538,7 +536,7 @@ def get_headline(history: list[mel.ChatMessage]):
     
     Args:
         history: chat history 
-  """
+    """
   state= me.state(State)
   chat_history = ""
   if state.file and state.uploaded:
