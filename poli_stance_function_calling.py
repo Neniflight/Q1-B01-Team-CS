@@ -1,6 +1,18 @@
+"""
+This file is the functions writting for the Predictive AI part of our factuality factor Political Stance
+
+There are a total of 3 functions in here: poli_stance_score, perspective_analyzer and verify_facts_analyzer
+"""
+
 # imports
 import chromadb
 
+"""
+FUNCTION 1: poli_stance_score
+    - This function is for calculating the final score for political stance by average all 3 microfactor's scores
+    - Args: microfactor_1, microfactor_2, microfactor_3: float numbers
+    - Output: float number of the final score for political stance
+"""
 # function to get the final score of poli_stance_score
 def poli_stance_score(microfactor_1:float, microfactor_2:float, microfactor_3:float):
     """Averages the microfactors from a single factuality factor. This function should be used when combining into an overall score.
@@ -18,6 +30,14 @@ def poli_stance_score(microfactor_1:float, microfactor_2:float, microfactor_3:fl
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 collection = chroma_client.get_or_create_collection(name="Misinformation")
 
+
+"""
+FUNCTION 2: perspective_analyzer
+    - This function gets the top 10 most similar statemetns from our chromadb with party affiliation label, then 
+        calculates the scores based on ther politial affiliations 
+    - Args: text: str the user inputs
+    - Output: float number of the score for this microfactor
+"""
 # MICRO FACTOR 1: Perspective Analyzer to analyze overall stance of the text
 def perspective_analyzer(text:str):
     """Analyzes text's closeness to other text without considering truth or false statement, 
@@ -63,6 +83,13 @@ def perspective_analyzer(text:str):
 
 # We will be evaluating MICRO FACTOR 2 with Gemini
 
+"""
+FUNCTION 3: verify_facts_analyzer
+    - This function gets the top 10 most similar TRUE statemetns from our chromadb with party affiliation label, then 
+        calculates the scores based on ther politial affiliations 
+    - Args: text: str the user inputs
+    - Output: float number of the score for this microfactor
+"""
 # MICRO FACTOR 3: verify facts analyzer to analyze overall stance of the text
 def verify_facts_analyzer(text:str):
     """Analyzes text's closeness to other text with only TRUE statements, 

@@ -1,3 +1,19 @@
+"""
+NOTES:
+1. This notebook is basically the same as the Keras neural network but converted into pytorch for version compatibility purposes.
+2. Data cleaning is slightly different (please read the following bullet point)
+    - SAME:
+    - OHE speaker, context, party affiliation
+    - dropped rows with na
+    - DIFFERENT:
+    - We've categorized context into more general categories (ex. public speech -> speech, twitter -> social media)
+    - After categorizing context, drop those with na since there were only very few of them
+3. We've already ran this py file once to train the model and allowing our app.py file use this model when the button to check social credibility is click.
+    However, we needed to comment everything but the model itself out because we don't want the whole model to be retrained every single time the button is clicked
+    since it would lead to resource exhausted error.
+4. Model is from line 213 to 245
+"""
+
 # imports
 import pandas as pd
 import numpy as np
@@ -5,7 +21,7 @@ import numpy as np
 import sklearn
 from sklearn.preprocessing import OneHotEncoder
 
-# EDA
+# Data Cleaning
 # train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
 # train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
 #                      'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
