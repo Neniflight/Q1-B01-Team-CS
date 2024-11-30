@@ -1,3 +1,11 @@
+
+"""
+NOTES:
+1. Overall function of this file was creating and training a model for our social credibility predictive AI
+    facutality factor. 
+2. Keras didn't work out due to versions not compatible, and we've tried to switch to many different version
+    but it still didn't work out, therefore, we've decided to redo this neural network in pytorch
+"""
 # imports 
 import pandas as pd
 import numpy as np
@@ -11,7 +19,8 @@ train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/re
 first_data = train_data.columns
 train_data.loc[train_data.shape[0]] = first_data
 
-# EDA
+# data cleaning 
+# (dropping na and only keeping 5 columns)
 train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
                      'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
                     'pants on fire counts', 'context', 'extracted justification']
