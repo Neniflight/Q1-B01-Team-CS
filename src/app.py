@@ -87,6 +87,12 @@ def handle_upload(event: me.UploadEvent):
   get_headline(state.chat_history)
 
 def pdf_to_text(user_pdf):
+  """converts the pdf the user uploads via the upload pdf button to string page by page
+     and returns the text as a string.
+    
+    Args:
+        user_pdf: A pdf the user uploads. 
+  """
   reader = PdfReader(user_pdf)
   text = ""
   for i in range(len(reader.pages)):
@@ -96,7 +102,108 @@ def pdf_to_text(user_pdf):
 # citation: https://pypdf2.readthedocs.io/en/3.x/user/extract-text.html
 # citation: https://www.geeksforgeeks.org/convert-pdf-to-txt-file-using-python/
 
+from serpapi import GoogleSearch
+from dotenv import load_dotenv
+import os
+from newspaper import Article
+from newspaper import ArticleException
+from datetime import datetime, timedelta
+# serp_api_function
+def serp_api(user_article_title):
+  serp_api_key = os.getenv("SERP_API_KEY")
+  # set up parameters for search
+  params = {
+  "engine": "google",
+  "q": f"related: {'The electorate is changing. Heres what that means for Trump and Harris'}",
+#   "location": "Seattle-Tacoma, WA, Washington, United States", don't need location
+  "hl": "en",
+  "gl": "us",
+  "google_domain": "google.com",
+  "num": "10",
+#   "start": "10",
+  "safe": "active",
+  "api_key": serp_api_key,
+  "device": "desktop",
+  }
+
+  # Begin search and get organic results
+  search = GoogleSearch(params)
+  results = search.get_dict()
+  organic_results = results["organic_results"]
+
+  # create a function to find how many days, hours, or minutes ago the article was published
+  def relative_date_to_absolute(relative_date):
+    now = datetime.now()
+
+    if "day" in relative_date:
+        days = int(relative_date.split()[0])
+        return (now - timedelta(days=days)).strftime('%Y-%m-%d')
+    elif "hour" in relative_date:
+        hours = int(relative_date.split()[0])
+        return (now - timedelta(hours=hours)).strftime('%Y-%m-%d')
+    elif "minute" in relative_date:
+        minutes = int(relative_date.split()[0])
+        return (now - timedelta(minutes=minutes)).strftime('%Y-%m-%d')
+    else:
+        # encountered bug here... relative_datetime is string.
+        place_holder = now
+        return datetime.strftime(place_holder, "%Y-%m-%d")
+  
+  # create a function to process the organic_results as dictionaries in a list
+  def process_organic_results(results):
+    similar_article_info = []
+    irrelevant_texts = [
+            "You have permission to edit this article.\n\nEdit Close",
+            "Some other irrelevant text"
+        ]
+    for result in results:
+        article_dict = {}
+        try:
+            link = result['link']
+            article = Article(link, language='en')
+            article.download()
+            article.parse()
+            article.nlp()
+            article_dict['title'] = article.title 
+            article_dict['authors'] = article.authors
+            if article.text in irrelevant_texts:
+                article_dict['summary'] = ''
+                # article_dict['full_text'] = ''
+            else:
+                article_dict['summary'] = article.summary 
+                # article_dict['full_text'] = article.text
+                
+            if article.publish_date:
+                article_dict['publish_date'] = str(article.publish_date.date())
+            else:
+                article_dict['publish_date'] = relative_date_to_absolute(result.get('date'))
+            article_dict['source'] = result['source']
+            similar_article_info.append(article_dict)
+        except ArticleException:
+            article_dict['title'] = result['title']
+            article_dict['authors'] = None
+            article_dict['summary'] = result['snippet']
+            # article_dict['full_text'] = None
+            if result.get('date'):
+                article_dict['publish_date'] = relative_date_to_absolute(result.get('date'))
+            else:
+                article_dict['publish_date'] = None
+            article_dict['source'] = result['source']
+            similar_article_info.append(article_dict)
+    return similar_article_info
+  
+  # get similar articles using process_organic_results function
+  similar_article_info = process_organic_results(organic_results)
+
+  return similar_article_info
+
 def ask_predefined_questions(event: me.ClickEvent):
+  """loop through our predefined questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
   state = me.state(State)
   for question in state.predefined_questions:
     # print(f"Question:{question}")
@@ -106,27 +213,56 @@ def ask_predefined_questions(event: me.ClickEvent):
     time.sleep(5)
 
 def ask_normal_prompting_questions(event: me.ClickEvent):
+  """loop through our normal prompted questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
   state = me.state(State)
   for question in state.normal_prompting_question:
+    # editing the question that will be going into gemini
+    user_article_title = state.article_title
+    articles_from_serp_api = serp_api(user_article_title)
+    text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
+    question = question + text_to_add
+    print("added serp_api info to normal question")
     print("start asking normal prompting questions")
-    # print(f"Question:{question}")
+    print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
-    # print(f"Response:{response}")
+    print(f"Response:{response}")
     time.sleep(5)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
+  """loop through our fractal chain of thought prompted questions (3 iterations) to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
   state = me.state(State)
   for question in state.fcot_prompting_question:
+    # editing the question that will be going into gemini
+    user_article_title = state.article_title
+    articles_from_serp_api = serp_api(user_article_title)
+    text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
+    question = question + text_to_add
+    print("added serp_api info to fcot question")
     print("start asking fcot prompting questions")
-    # print(f"Question:{question}")
+    print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
-    # print(f"Response:{response}")
+    print(f"Response:{response}")
     time.sleep(5)
 
     
 def ask_pred_ai(event: me.ClickEvent):
+  """Runs two Predictive AI models (sentiment_analyzer & social_credit_model) and returns a score for each factuality factors
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
   state = me.state(State)
   loaded_model = pickle.load(open("../model/XGModel.sav", 'rb'))
   response = state.article_title
@@ -163,7 +299,7 @@ def ask_pred_ai(event: me.ClickEvent):
   
   # load model
   social_credit_model = speaker_context_party_nn()
-  state_dict = torch.load("model/speaker_context_party_model_state.pth")
+  state_dict = torch.load("../model/speaker_context_party_model_state.pth")
   social_credit_model.load_state_dict(state_dict)
   print("hello loaded model!")
   # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
@@ -195,6 +331,11 @@ def ask_pred_ai(event: me.ClickEvent):
 
   # light cleaning (fixing syntax)
   def clean_context(context):
+    """cleaned the context column of the liar plus dataset by deleting stopwords
+    
+    Args:
+        context: each datapoint in the context column from the liar plus dataset 
+    """
     context = context.split(" ")
     cleaned_context = []
     for w in context:
@@ -208,6 +349,13 @@ def ask_pred_ai(event: me.ClickEvent):
 
   # deep cleaning (fixing to reduce category)
   def clean_context_by_cat (context):
+    """going through the context column of the liar plus dataset and categorizing them into
+       more generalized categories based on what text was included in the original datapoint
+       after deleting stop words 
+    
+    Args:
+        context: each datapoint in the context column from the liar plus dataset 
+    """
     context = context.split(" ")
     for w in context:
       if w == "press":
@@ -426,6 +574,9 @@ def ask_pred_ai(event: me.ClickEvent):
 
 @me.page(path="/", title="Gemini Misinformation ChatBot")
 def page():
+    """
+    setting up the mesop interface including the chatbox, buttons, and scores bars for each factuality factors
+    """
     state = me.state(State)
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
       me.uploader(
@@ -490,6 +641,11 @@ def page():
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
 def get_headline(history: list[mel.ChatMessage]):
+  """asks gemini to go through the text of the pdf uploaded by the user and get the headline of the text 
+    
+    Args:
+        history: chat history 
+  """
   state= me.state(State)
   chat_history = ""
   if state.file and state.uploaded:
