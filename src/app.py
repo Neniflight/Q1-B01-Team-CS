@@ -168,10 +168,10 @@ def serp_api(user_article_title):
             article_dict['authors'] = article.authors
             if article.text in irrelevant_texts:
                 article_dict['summary'] = ''
-                article_dict['full_text'] = ''
+                # article_dict['full_text'] = ''
             else:
                 article_dict['summary'] = article.summary 
-                article_dict['full_text'] = article.text
+                # article_dict['full_text'] = article.text
                 
             if article.publish_date:
                 article_dict['publish_date'] = str(article.publish_date.date())
@@ -183,7 +183,7 @@ def serp_api(user_article_title):
             article_dict['title'] = result['title']
             article_dict['authors'] = None
             article_dict['summary'] = result['snippet']
-            article_dict['full_text'] = None
+            # article_dict['full_text'] = None
             if result.get('date'):
                 article_dict['publish_date'] = relative_date_to_absolute(result.get('date'))
             else:
