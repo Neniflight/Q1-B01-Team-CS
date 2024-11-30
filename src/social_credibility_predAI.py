@@ -1,3 +1,4 @@
+
 """
 NOTES:
 1. Overall function of this file was creating and training a model for our social credibility predictive AI
@@ -5,7 +6,6 @@ NOTES:
 2. Keras didn't work out due to versions not compatible, and we've tried to switch to many different version
     but it still didn't work out, therefore, we've decided to redo this neural network in pytorch
 """
-
 # imports 
 import pandas as pd
 import numpy as np

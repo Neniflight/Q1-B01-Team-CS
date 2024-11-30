@@ -1,3 +1,4 @@
+
 """
 NOTES:
 1. This notebook is basically the same as the Keras neural network but converted into pytorch for version compatibility purposes.
@@ -13,7 +14,6 @@ NOTES:
     since it would lead to resource exhausted error.
 4. Model is from line 213 to 245
 """
-
 # imports
 import pandas as pd
 import numpy as np

@@ -1,5 +1,8 @@
+
+# Import necessary packages
 import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import HarmCategory, HarmBlockThreshold, content_types
+from collections.abc import Iterable
 import os
 from dotenv import load_dotenv
 import re
@@ -15,7 +18,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch import optim as optim
 from social_credibility_predAI_pytorch import speaker_context_party_nn
-# import backoff
 from transformers import pipeline
 from textblob import TextBlob
 import pandas as pd
@@ -25,10 +27,10 @@ import chromadb
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
-# import tensorflow_model_optimization as tfmot
 
+# from the env file, get your API_KEY
 load_dotenv()
-api_key = os.getenv("API_KEY")
+api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
 generation_config = {
@@ -39,6 +41,7 @@ generation_config = {
     "top_k": 40, # token is selected from 40 likely tokens
 }
 
+# Turning all safety settings off
 safety_settings = {
   HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
   HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -46,6 +49,14 @@ safety_settings = {
   HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
 }
 
+# function used to help with function calling and setting configurations
+def tool_config_from_mode(mode: str, fns: Iterable[str] = ()):
+    """Create a tool config with the specified function calling mode."""
+    return content_types.to_tool_config(
+        {"function_calling_config": {"mode": mode, "allowed_function_names": fns}}
+    )
+
+# Creating the model with proper configs
 model = genai.GenerativeModel(
     model_name="gemini-1.5-pro-002",
     generation_config=generation_config,
@@ -53,11 +64,13 @@ model = genai.GenerativeModel(
     system_instruction="You are trying to fight against misinformation by scoring different articles on their factuality factors. In your responses, do not use copyrighted material and be concise. Do not assess an article until you are given a factuality factor to grade on.",
 )
 
+# Connecting to the vector database to allow for more informed prompts
 chroma_client = chromadb.HttpClient(host="localhost", port=8000)
 collection = chroma_client.get_collection("Misinformation")
 
 @me.stateclass
 class State:
+  # Sets the initial states of different variables from microfactors to chat_history
   file: me.UploadedFile
   uploaded: bool = False
   article_title: str = ""
@@ -80,6 +93,7 @@ class State:
 def load(e: me.LoadEvent):
   me.set_theme_mode("system")
 
+# Function used to handle when a user uploads a pdf file
 def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
@@ -272,7 +286,7 @@ def ask_pred_ai(event: me.ClickEvent):
   sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', truncation=True)
   confidence = sentiment_analyzer(response)[0]['score']
 
-  with open('data/speaker_reput_dict.pkl', 'rb') as file:
+  with open('../data/speaker_reput_dict.pkl', 'rb') as file:
     speaker_reput_dict = pickle.load(file)
   
   speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
@@ -621,6 +635,7 @@ def page():
         bot_user="Chanly", # Short for the Vietnamese word for Truth
       )
 
+    # Contains factuality factor and veracity scores
     with me.box(style=me.Style(display='flex', width="100%", justify_content="space-around", flex_wrap="wrap")):
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
@@ -640,6 +655,29 @@ def page():
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
+@me.page(path="/combined", title="Pred and Generative")
+def page():
+  state = me.state(State)
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
+    me.text("Generative AI with function calling", type='headline-3')
+    me.uploader(
+      label="Upload PDF",
+      accepted_file_types=[".pdf"],
+      on_upload=handle_upload,
+      type="flat",
+      color="primary",
+      style=me.Style(font_weight="bold"),
+    )
+    if state.uploaded:
+      me.text("File uploaded!")
+  with me.box(style=me.Style(height="50%")):
+    mel.chat(
+      transform_fc, 
+      title="Gemini Misinformation Helper", 
+      bot_user="Chanly", # Short for the Vietnamese word for Truth
+    )
+
+# Used to get the headline of an article 
 def get_headline(history: list[mel.ChatMessage]):
   """asks gemini to go through the text of the pdf uploaded by the user and get the headline of the text 
     
@@ -658,13 +696,14 @@ def get_headline(history: list[mel.ChatMessage]):
   state.article_title= full_response
   state.chat_history = history
   
+# Function for handling inputs into the generative AI model
 def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
     chat_history = ""
     if state.file and state.uploaded:
        chat_history += f"\nuser: {pdf_to_text(state.file)}"
+    # Creating the chat_history
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-
     # implementation with chromaDB goes here
     # results = collection.query(query_texts=[state.article_title],
     #                                  n_results=3,
@@ -679,7 +718,7 @@ def transform(input: str, history: list[mel.ChatMessage]):
     # time.sleep(4)
 
     # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
-
+    # Combining input and chat_history
     full_input = f"{chat_history}\nuser: {input}"
     time.sleep(4)
     response = model.generate_content(full_input, stream=True)
@@ -717,3 +756,10 @@ def transform(input: str, history: list[mel.ChatMessage]):
     print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
+
+def transform_fc(input: str, history: list[mel.ChatMessage]):
+  state = me.state(State)
+  chat_history = ""
+  if state.file and state.uploaded:
+      chat_history += f"\nuser: {pdf_to_text(state.file)}"
+  chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
