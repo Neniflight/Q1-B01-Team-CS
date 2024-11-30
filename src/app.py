@@ -151,7 +151,7 @@ def ask_pred_ai(event: me.ClickEvent):
   sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', truncation=True)
   confidence = sentiment_analyzer(response)[0]['score']
 
-  with open('data/speaker_reput_dict.pkl', 'rb') as file:
+  with open('../data/speaker_reput_dict.pkl', 'rb') as file:
     speaker_reput_dict = pickle.load(file)
   
   speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
