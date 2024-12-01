@@ -85,6 +85,7 @@ docker run --rm --name chromadb -v chroma_volume:/chroma/chroma -e IS_PERSISTENT
 ```
 6. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
 ```bash
+cd src
 mesop app.py
 ```
 7. Once you are done messing around with the tool. Stop the docker container by running "^C" or:
