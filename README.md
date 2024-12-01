@@ -37,17 +37,29 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * ` social_cred_predAI.keras`: keras version of the saved tensorflow keras Neural Network to predict social credibility score **(not in use anymore)**
   * `speaker_context_party_model_state.pth`: Saves the weights within the neural network to use again with Pytorch
   * `speaker_context_party_nn.pkl`: Pickled model via Pytorch
+* `notebooks`: Contains all jupyternotebooks we've work on
+  * `Pred_AI_notebook`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and moved to social_credibility_predAI.py.
+  * `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from.
+  * `chunking_and_chroma`: A Python Notebook that inputs these chunks into a vector database known as Chroma
+  * `function_call_test`: A Python Notebook we created to test our function calling function for our factuality factors.
+  * `liar_plus_to_chroma`: A Python notebook that translate the liar plus dataset into a vector database.
+  * `scraping_politifact`: A Python notebook that scrapes the [politifact fact check website](https://www.politifact.com/factchecks/?page=1) and [politifact truth-o-meter website](https://www.politifact.com/truth-o-meter/promises/list/?page=1&) and translate the data into a vector database
+  * `serp_api_testing`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
+* `src`: contains all files we need in the same directory in order to run our system
+  * `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
+  * `fcot_prompting`: Python file that contains a predefined list of Fractal Chain of Thought prompted questions to ask to the Generative AI.
+  * `function_calls`: Functions for the sensational facutality factor for function calling.
+  * `normal_prompting`: Python file that contains a predefined list of normal prompted questions to ask to the Generative AI.
+  * `poli_stance_function_calling`: Functions for the political stance facutality factor for function calling.
+  * `questions.py`: Python file that contains a predefined list of questions to ask to the Generative AI.
+  * `serp_api_testing`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
+  * `social_credibility_predAI.py`: tensorflow keras neural network in python file to save and load on app.py **(not in use anymore)**
+  * `social_credibility_predAI_pytorch.py`: Pytorch neural network in python file to save and load on app.py
 * `.gitignore:` Tell github which files not to track like env or pycache files.
 * `.python-version`: Your python version should be 3.11.9 for app.py to work
-* `Pred_AI_notebook`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and moved to social_credibility_predAI.py.
 * `README.md`: What you are reading right now :)
-* `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
-* `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from. 
-* `chunking_and_chroma`: A Python Notebook that inputs these chunks into a vector database known as Chroma
 * `environmental_mac.yml`: Used to download your environment to have all the packages to make this work. This env is for Mac devices
 * `environmental_win.yml`: Used to download your environment to have all the packages to make this work. This env is for Window devices
-* `questions.py`: Python file that contains a predefined list of questions to ask to the Generative AI.
-* `social_credibility_predAI.py`: tensorflow keras neural network in python file to save and load on app.py
 
 ---
 # How to Get Started
@@ -59,19 +71,23 @@ git clone {github_repo_link}
 ```bash
 GEMINI_API_KEY="{API_KEY}"
 ```
-3. Create the environment based on your OS. Make sure you are using 3.11.9 or earlier because Google AI Studio does not support Python 3.13 and wheel does not support 3.12
+3. Within the same file as step 2 paste your [Serp API key](https://serpapi.com/) inside of it:
+```bash
+SERP_API_KEY="{API_KEY}"
+```
+4. Create the environment based on your OS. Make sure you are using 3.11.9 or earlier because Google AI Studio does not support Python 3.13 and wheel does not support 3.12
 ```bash
 conda env create -f environment_{respective_OS}.yml
 ```
-4. Once done, you need to set up a ChromaDB database for the Google Gemini to base its responses off of. Run the `liar_plus_to_chroma.ipynb` in its entirety. Make sure you have Docker installed and running before you run this command:
+5. Once done, you need to set up a ChromaDB database for the Google Gemini to base its responses off of. Run the `liar_plus_to_chroma.ipynb` in its entirety. Make sure you have Docker installed and running before you run this command:
 ```bash
 docker run --rm --name chromadb -v chroma_volume:/chroma/chroma -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE -p 8000:8000 chromadb/chroma
 ```
-5. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
+6. Start fighting against misinformation by starting the app. If you are experiencing issues with this, pip uninstall mesop and reinstall it again. On a different terminal, run the following:
 ```bash
 mesop app.py
 ```
-6. Once you are done messing around with the tool. Stop the docker container by running "^C" or:
+7. Once you are done messing around with the tool. Stop the docker container by running "^C" or:
 ```bash
 docker stop chromadb
 ```
