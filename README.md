@@ -38,21 +38,21 @@ Each file on this repo has its own purpose! We will explain what each file does 
   * `speaker_context_party_model_state.pth`: Saves the weights within the neural network to use again with Pytorch
   * `speaker_context_party_nn.pkl`: Pickled model via Pytorch
 * `notebooks`: Contains all jupyternotebooks we've work on
-  * `Pred_AI_notebook`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and moved to social_credibility_predAI.py.
+  * `Pred_AI_notebook.ipynb`: Keras tensorflow Predictive AI and other attempted models on jupyternotebook. This is then cleaned and moved to social_credibility_predAI.py.
   * `chunking.ipynb`: A Python Notebook that chunks an article. This is where `chunks.pkl` come from.
-  * `chunking_and_chroma`: A Python Notebook that inputs these chunks into a vector database known as Chroma
-  * `function_call_test`: A Python Notebook we created to test our function calling function for our factuality factors.
-  * `liar_plus_to_chroma`: A Python notebook that translate the liar plus dataset into a vector database.
-  * `scraping_politifact`: A Python notebook that scrapes the [politifact fact check website](https://www.politifact.com/factchecks/?page=1) and [politifact truth-o-meter website](https://www.politifact.com/truth-o-meter/promises/list/?page=1&) and translate the data into a vector database
-  * `serp_api_testing`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
+  * `chunking_and_chroma.ipynb`: A Python Notebook that inputs these chunks into a vector database known as Chroma
+  * `function_call_test.ipynb`: A Python Notebook we created to test our function calling function for our factuality factors.
+  * `liar_plus_to_chroma.ipynb`: A Python notebook that translate the liar plus dataset into a vector database.
+  * `scraping_politifact.ipynb`: A Python notebook that scrapes the [politifact fact check website](https://www.politifact.com/factchecks/?page=1) and [politifact truth-o-meter website](https://www.politifact.com/truth-o-meter/promises/list/?page=1&) and translate the data into a vector database
+  * `serp_api_testing.ipynb`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
 * `src`: contains all files we need in the same directory in order to run our system
   * `app.py`: Python file that has all the functionality for the Mesop interface integrated with Generative AI and Predictive AI. This is where you **should start** to see how our main features work!
-  * `fcot_prompting`: Python file that contains a predefined list of Fractal Chain of Thought prompted questions to ask to the Generative AI.
-  * `function_calls`: Functions for the sensational facutality factor for function calling.
-  * `normal_prompting`: Python file that contains a predefined list of normal prompted questions to ask to the Generative AI.
-  * `poli_stance_function_calling`: Functions for the political stance facutality factor for function calling.
+  * `fcot_prompting.py`: Python file that contains a predefined list of Fractal Chain of Thought prompted questions to ask to the Generative AI.
+  * `function_calls.py`: Functions for the sensational facutality factor for function calling.
+  * `normal_prompting.py`: Python file that contains a predefined list of normal prompted questions to ask to the Generative AI.
+  * `poli_stance_function_calling.py`: Functions for the political stance facutality factor for function calling.
   * `questions.py`: Python file that contains a predefined list of questions to ask to the Generative AI.
-  * `serp_api_testing`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
+  * `serp_api_testing.ipynb`: A Python notebook that we tested our serp api web search, which is later integrated into our app.py file.
   * `social_credibility_predAI.py`: tensorflow keras neural network in python file to save and load on app.py **(not in use anymore)**
   * `social_credibility_predAI_pytorch.py`: Pytorch neural network in python file to save and load on app.py
 * `.gitignore:` Tell github which files not to track like env or pycache files.
