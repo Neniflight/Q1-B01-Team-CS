@@ -128,7 +128,7 @@ def serp_api(user_article_title):
   # set up parameters for search
   params = {
   "engine": "google",
-  "q": f"related: {'The electorate is changing. Heres what that means for Trump and Harris'}",
+  "q": f"related: {user_article_title}",
 #   "location": "Seattle-Tacoma, WA, Washington, United States", don't need location
   "hl": "en",
   "gl": "us",
@@ -235,13 +235,81 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
   """
   state = me.state(State)
   for question in state.normal_prompting_question:
+    print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    print(f"Response:{response}")
+    time.sleep(5)
+
+def ask_normal_prompting_questions_with_vector_db(event: me.ClickEvent):
+  """loop through our normal prompted questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
+  state = me.state(State)
+  for question in state.normal_prompting_question:
+    # editing the question that will be going into gemini
+    user_article_title = state.article_title
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3, where={"label": "true"})
+    vdb_results = vdb_results['metadatas']
+    print(vdb_results)
+    text_to_add = ". In your analysis please also consider these true statements that are from our database and are most relevent to the article title: " + str(vdb_results)
+    question = question + text_to_add
+    print("added vector database info to normal question")
+    print("start asking normal prompting + vector database questions")
+    print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    print(f"Response:{response}")
+    time.sleep(5)
+
+def ask_normal_prompting_questions_with_serp_api(event: me.ClickEvent):
+  """loop through our normal prompted questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
+  state = me.state(State)
+  for question in state.normal_prompting_question:
     # editing the question that will be going into gemini
     user_article_title = state.article_title
     articles_from_serp_api = serp_api(user_article_title)
     text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
     question = question + text_to_add
     print("added serp_api info to normal question")
-    print("start asking normal prompting questions")
+    print("start asking normal prompting + serp_api questions")
+    print(f"Question:{question}")
+    response_generator = transform(question, state.chat_history)  
+    response = ''.join(response_generator)
+    print(f"Response:{response}")
+    time.sleep(5)
+
+def ask_normal_prompting_questions_with_vdb_and_serp_api(event: me.ClickEvent):
+  """loop through our normal prompted questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
+  state = me.state(State)
+  for question in state.normal_prompting_question:
+    # editing the question that will be going into gemini
+    # get user inputted article title
+    user_article_title = state.article_title
+    # vdb
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3, where={"label": "true"})
+    vdb_results = vdb_results['metadatas']
+    text_to_add = ". In your analysis please also consider these true statements that are from our database and are most relevent to the article title: " + str(vdb_results)
+    question = question + text_to_add
+    # serp_api
+    articles_from_serp_api = serp_api(user_article_title)
+    text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
+    question = question + text_to_add
+    print("added vdb and serp_api info to normal question")
+    print("start asking normal prompting + vdb + serp_api questions")
     print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
     response = ''.join(response_generator)
@@ -586,8 +654,45 @@ def ask_pred_ai(event: me.ClickEvent):
   print(state.overall_social_credibility)
   state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
-@me.page(path="/", title="Gemini Misinformation ChatBot")
-def page():
+# Added code for the buttons on mesop interface
+def navigate_normal(event: me.ClickEvent):
+  me.navigate("/normal_adjustments")
+
+def navigate_cot(event: me.ClickEvent):
+  me.navigate("/Gemini_Misinformation_ChatBot")
+
+def navigate_fcot(event: me.ClickEvent):
+  me.navigate("/Gemini_Misinformation_ChatBot")
+
+def navigate(event: me.ClickEvent):
+  me.navigate("/Gemini_Misinformation_ChatBot")
+
+@me.page(path="/")
+def home():
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
+      me.text("Welcome to Gemini Misinformation Detection System!", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
+      me.text("click on the buttons below to check out different prompting techniques", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
+      with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
+        me.button("Normal prompting", on_click=navigate_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Cot prompting", on_click=navigate_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Fcot prompting", on_click=navigate_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+
+@me.page(path="/normal_adjustments")
+def normal_adjustments():
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
+      me.text("Click on the buttons below to apply the selected adjustment", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
+      with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
+        me.button("None", on_click=ask_normal_prompting_questions, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database", on_click=ask_normal_prompting_questions_with_vector_db, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Serp API", on_click=ask_normal_prompting_questions_with_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database & Serp API", on_click=ask_normal_prompting_questions_with_vdb_and_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database & Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Serp API and Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database & Serp API & Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+
+@me.page(path="/Gemini_Misinformation_ChatBot")
+def Gemini_Misinformation_ChatBot():
     """
     setting up the mesop interface including the chatbox, buttons, and scores bars for each factuality factors
     """
@@ -655,27 +760,28 @@ def page():
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
-@me.page(path="/combined", title="Pred and Generative")
-def page():
-  state = me.state(State)
-  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
-    me.text("Generative AI with function calling", type='headline-3')
-    me.uploader(
-      label="Upload PDF",
-      accepted_file_types=[".pdf"],
-      on_upload=handle_upload,
-      type="flat",
-      color="primary",
-      style=me.Style(font_weight="bold"),
-    )
-    if state.uploaded:
-      me.text("File uploaded!")
-  with me.box(style=me.Style(height="50%")):
-    mel.chat(
-      transform_fc, 
-      title="Gemini Misinformation Helper", 
-      bot_user="Chanly", # Short for the Vietnamese word for Truth
-    )
+# not sure why its giving me an error commenting it out for now
+# @me.page(path="/combined", title="Pred and Generative")
+# def page():
+#   state = me.state(State)
+#   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', display='flex', flex_direction="column")):
+#     me.text("Generative AI with function calling", type='headline-3')
+#     me.uploader(
+#       label="Upload PDF",
+#       accepted_file_types=[".pdf"],
+#       on_upload=handle_upload,
+#       type="flat",
+#       color="primary",
+#       style=me.Style(font_weight="bold"),
+#     )
+#     if state.uploaded:
+#       me.text("File uploaded!")
+#   with me.box(style=me.Style(height="50%")):
+#     mel.chat(
+#       transform_fc, 
+#       title="Gemini Misinformation Helper", 
+#       bot_user="Chanly", # Short for the Vietnamese word for Truth
+#     )
 
 # Used to get the headline of an article 
 def get_headline(history: list[mel.ChatMessage]):
