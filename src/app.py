@@ -5,6 +5,7 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold, content_
 from collections.abc import Iterable
 import os
 from dotenv import load_dotenv
+from functools import partial
 import re
 import mesop as me
 import mesop.labs as mel
@@ -27,6 +28,7 @@ import chromadb
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
+from dynamic_pages import create_reproducible_page
 
 # from the env file, get your API_KEY
 load_dotenv()
@@ -655,27 +657,39 @@ def ask_pred_ai(event: me.ClickEvent):
   state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
 # Added code for the buttons on mesop interface
-def navigate_normal(event: me.ClickEvent):
-  me.navigate("/normal_adjustments")
+# def navigate_normal(event: me.ClickEvent):
+#   me.navigate("/normal_adjustments")
 
-def navigate_cot(event: me.ClickEvent):
-  me.navigate("/Gemini_Misinformation_ChatBot")
+# def navigate_cot(event: me.ClickEvent):
+#   me.navigate("/Gemini_Misinformation_ChatBot")
 
-def navigate_fcot(event: me.ClickEvent):
-  me.navigate("/Gemini_Misinformation_ChatBot")
+# def navigate_fcot(event: me.ClickEvent):
+#   me.navigate("/Gemini_Misinformation_ChatBot")
 
-def navigate(event: me.ClickEvent):
-  me.navigate("/Gemini_Misinformation_ChatBot")
+# def navigate(event: me.ClickEvent):
+#   me.navigate("/Gemini_Misinformation_ChatBot")
+
+def navigate_to(event: me.ClickEvent, path: str):
+  me.navigate(path)
+navigate_to_ve = partial(navigate_to, path="/Gemini_Misinformation_ChatBot")
+navigate_to_normal = partial(navigate_to, path="/normal_adjustments")
+navigate_to_cot = partial(navigate_to, path="/cot_adjustments")
+navigate_to_fcot = partial(navigate_to, path="/fcot_adjustments")
+
+@me.page(path='/test')
+def test():
+  create_reproducible_page("bro", "this is a nice prompt you have here", "execute this", navigate_to_ve)
 
 @me.page(path="/")
 def home():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
       me.text("Welcome to Gemini Misinformation Detection System!", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
+      me.button("Veracity Engine In Entirety", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center", margin=me.Margin(bottom=20)))
       me.text("click on the buttons below to check out different prompting techniques", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
       with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
-        me.button("Normal prompting", on_click=navigate_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Cot prompting", on_click=navigate_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Fcot prompting", on_click=navigate_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Normal prompting", on_click=navigate_to_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Cot prompting", on_click=navigate_to_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Fcot prompting", on_click=navigate_to_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
@@ -685,11 +699,11 @@ def normal_adjustments():
         me.button("None", on_click=ask_normal_prompting_questions, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
         me.button("Vector Database", on_click=ask_normal_prompting_questions_with_vector_db, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
         me.button("Serp API", on_click=ask_normal_prompting_questions_with_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
         me.button("Vector Database & Serp API", on_click=ask_normal_prompting_questions_with_vdb_and_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database & Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Serp API and Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database & Serp API & Function Calling", on_click=navigate, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+        me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/Gemini_Misinformation_ChatBot")
 def Gemini_Misinformation_ChatBot():
