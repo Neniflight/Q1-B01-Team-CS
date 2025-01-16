@@ -287,7 +287,9 @@ def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, even
     state.vdb_response = vdb_str
     input = input + vdb_str + "\n"
   if serp == True:
+    user_article_title = state.article_title
     articles_from_serp_api = str(serp_api(user_article_title))
+    print(user_article_title)
     serp_str = f"SERP API: These are similar articles found online via an API. Please consider these articles' information in the score: {articles_from_serp_api}"
     state.serp_response = serp_str
     input = input + serp_str + "\n"
