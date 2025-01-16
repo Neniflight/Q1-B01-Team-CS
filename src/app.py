@@ -28,7 +28,7 @@ import chromadb
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
-from dynamic_pages import create_reproducible_page
+from naive_realism import naive_realism_normal, naive_realism_cot, naive_realism_fcot
 
 # from the env file, get your API_KEY
 load_dotenv()
@@ -90,10 +90,16 @@ class State:
   overall_sens_fcot_score: float = 0.0
   overall_stance_fcot_score: float = 0.0
   normal_prompt_vs_fcot_prompt_log: dict[str, str] = field(default_factory=dict)
+  vdb_response: str = ""
+  serp_response: str = ""
+  test_response: str = ""
   # citation for using dict: https://github.com/google/mesop/issues/814
 
-def load(e: me.LoadEvent):
-  me.set_theme_mode("system")
+# def page_load(e: me.LoadEvent):
+#   state = me.state(State)
+#   state.test_response = ""
+#   state.vdb_response = ""
+#   state.serp_response = ""
 
 # Function used to handle when a user uploads a pdf file
 def handle_upload(event: me.UploadEvent):
@@ -227,6 +233,34 @@ def ask_predefined_questions(event: me.ClickEvent):
     response = ''.join(response_generator)
     # print(f"Response:{response}")
     time.sleep(5)
+
+# FINISH CREATING THIS FUNCTION BASED ON VB, SERP, FC 
+def ask_normal_prompting_questions_v2(vb: bool, serp: bool, fc: bool, event: me.ClickEvent):
+  print('what')
+  state = me.state(State)
+  # reset the chat_history to nothing to avoid conflicts
+  state.chat_history = []
+  input = ""
+  if vb == True:
+    user_article_title = state.article_title
+    print(user_article_title)
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3)
+    vdb_results = str(vdb_results['metadatas'])
+    vdb_str = f"ChromaDB Info: Based on the headline, these are the most similar statements: {vdb_results}"
+    state.vdb_response = vdb_str
+    input = input + vdb_str + "\n"
+  if serp == True:
+    articles_from_serp_api = str(serp_api(user_article_title))
+    serp_str = f"SERP API: These are similar articles found online via an API. Please consider these articles' information in the score: {articles_from_serp_api}"
+    state.serp_response = serp_str
+    input = input + serp_str + "\n"
+  input = input + naive_realism_normal[0]
+  response_generator = transform_test(input, state.chat_history)
+  response = ''.join(response_generator)
+  state.test_response = response
+  print(f"Response:{response}")
+  time.sleep(5)
+
 
 def ask_normal_prompting_questions(event: me.ClickEvent):
   """loop through our normal prompted questions to ask gemini to give us a score of 1 to 10 
@@ -656,25 +690,96 @@ def ask_pred_ai(event: me.ClickEvent):
   print(state.overall_social_credibility)
   state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
-# Added code for the buttons on mesop interface
-# def navigate_normal(event: me.ClickEvent):
-#   me.navigate("/normal_adjustments")
-
-# def navigate_cot(event: me.ClickEvent):
-#   me.navigate("/Gemini_Misinformation_ChatBot")
-
-# def navigate_fcot(event: me.ClickEvent):
-#   me.navigate("/Gemini_Misinformation_ChatBot")
-
-# def navigate(event: me.ClickEvent):
-#   me.navigate("/Gemini_Misinformation_ChatBot")
-
 def navigate_to(event: me.ClickEvent, path: str):
   me.navigate(path)
+
 navigate_to_ve = partial(navigate_to, path="/Gemini_Misinformation_ChatBot")
 navigate_to_normal = partial(navigate_to, path="/normal_adjustments")
 navigate_to_cot = partial(navigate_to, path="/cot_adjustments")
 navigate_to_fcot = partial(navigate_to, path="/fcot_adjustments")
+
+def create_reproducible_page(header_text: str, placeholder_text: str, prompt_adjust: tuple):
+  state = me.state(State)
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
+      me.uploader(
+      label="Upload PDF",
+      accepted_file_types=[".pdf"],
+      on_upload=handle_upload,
+      type="flat",
+      color="primary",
+      style=me.Style(font_weight="bold"),
+      )
+      me.text(
+          header_text,
+          style=me.Style(
+              font_size=24,
+              font_weight="bold",
+              margin=me.Margin(bottom=20)
+          )
+      )
+      me.text(
+          "Prompt",
+          style=me.Style(
+              font_size=20,
+              font_weight="bold",
+              margin=me.Margin(bottom=20)
+          )
+      )
+      me.textarea(
+        value= placeholder_text,
+        appearance="outline",
+        readonly=True,
+        style=me.Style(width="100%", padding=me.Padding.all(15))
+      )
+      me.button(
+          "Run Prompt",
+          on_click=lambda e: ask_normal_prompting_questions_v2(prompt_adjust[0], prompt_adjust[1], prompt_adjust[2], e),
+          color="primary",
+          type="flat",
+          style=me.Style(
+              align_self="center",
+              border=me.Border.all(me.BorderSide(width=2, color="black")),
+          )
+      )
+      me.text(
+          "Response",
+          style=me.Style(
+              font_size=20,
+              font_weight="bold",
+              margin=me.Margin(bottom=20)
+          )
+      )
+      me.textarea(
+        value=state.test_response,
+        readonly=True,
+        style=me.Style(width="100%", padding=me.Padding.all(15))
+      )
+      me.text(
+          "Vector Database",
+          style=me.Style(
+              font_size=20,
+              font_weight="bold",
+              margin=me.Margin(bottom=20)
+          )
+      )
+      me.textarea(
+        value=state.vdb_response,
+        readonly=True,
+        style=me.Style(width="100%", padding=me.Padding.all(15))
+      )
+      me.text(
+          "SERP API",
+          style=me.Style(
+              font_size=20,
+              font_weight="bold",
+              margin=me.Margin(bottom=20)
+          )
+      )
+      me.textarea(
+        value=state.serp_response,
+        readonly=True,
+        style=me.Style(width="100%", padding=me.Padding.all(15))
+      )
 
 @me.page(path='/test')
 def test():
@@ -683,27 +788,43 @@ def test():
 @me.page(path="/")
 def home():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
-      me.text("Welcome to Gemini Misinformation Detection System!", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
-      me.button("Veracity Engine In Entirety", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center", margin=me.Margin(bottom=20)))
-      me.text("click on the buttons below to check out different prompting techniques", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
-      with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
-        me.button("Normal prompting", on_click=navigate_to_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Cot prompting", on_click=navigate_to_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Fcot prompting", on_click=navigate_to_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+    me.text("Welcome to Gemini Misinformation Detection System!", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
+    me.button("Veracity Engine In Entirety", on_click=lambda x: navigate_to(x, "/Gemini_Misinformation_ChatBot"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center", margin=me.Margin(bottom=20)))
+    me.text("click on the buttons below to check out different prompting techniques", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
+      me.button("Normal prompting", on_click=navigate_to_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Cot prompting", on_click=navigate_to_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Fcot prompting", on_click=navigate_to_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
-      me.text("Click on the buttons below to apply the selected adjustment", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
-      with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
-        me.button("None", on_click=ask_normal_prompting_questions, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database", on_click=ask_normal_prompting_questions_with_vector_db, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Serp API", on_click=ask_normal_prompting_questions_with_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database & Serp API", on_click=ask_normal_prompting_questions_with_vdb_and_serp_api, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-        me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+    me.text("Click on the buttons below to apply the selected adjustment", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
+    with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
+      me.button("None", on_click=lambda x: navigate_to(x, "/norm_none"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Vector Database", on_click=lambda x: navigate_to(x, "/norm_vb"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Serp API", on_click=lambda x: navigate_to(x, "/norm_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Vector Database & Serp API", on_click=lambda x: navigate_to(x, "/norm_vb_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+
+@me.page(path="/norm_none")
+def norm_none():
+  create_reproducible_page("Normal Prompting with No Adjustments", naive_realism_normal[0], (False, False, False))
+
+@me.page(path="/norm_vb")
+def norm_vb():
+  create_reproducible_page("Normal Prompting with Vector Database", naive_realism_normal[0], (True, False, False))
+
+@me.page(path="/norm_serp")
+def norm_serp():
+  create_reproducible_page("Normal Prompting with SERP API", naive_realism_normal[0], (False, True, False))
+
+@me.page(path="/norm_vb_serp")
+def norm_serp():
+  create_reproducible_page("Normal Prompting with Vector Database and SERP API", naive_realism_normal[0], (True, True, False))
 
 @me.page(path="/Gemini_Misinformation_ChatBot")
 def Gemini_Misinformation_ChatBot():
@@ -876,6 +997,19 @@ def transform(input: str, history: list[mel.ChatMessage]):
     print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
+
+def transform_test(input: str, history: list[mel.ChatMessage]):
+  state = me.state(State)
+  chat_history = ""
+  if state.file and state.uploaded:
+    chat_history += f"\nuser: {pdf_to_text(state.file)}"
+  # Creating the chat_history
+  chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
+  full_input = f"{chat_history}\nuser: {input}"
+  time.sleep(4)
+  response = model.generate_content(full_input, stream=True)
+  for chunk in response:
+    yield chunk.text
 
 def transform_fc(input: str, history: list[mel.ChatMessage]):
   state = me.state(State)
