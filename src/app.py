@@ -93,6 +93,7 @@ class State:
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
+  response: str = ""
   # citation for using dict: https://github.com/google/mesop/issues/814
 
 # def page_load(e: me.LoadEvent):
@@ -106,7 +107,9 @@ def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
   state.uploaded = True
+  print('before get_headline')
   get_headline(state.chat_history)
+  print('after get_headline')
 
 def pdf_to_text(user_pdf):
   """converts the pdf the user uploads via the upload pdf button to string page by page
@@ -242,11 +245,12 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
+  state.response = ''
   for question in state.normal_prompting_question:
     print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
-    response = ''.join(response_generator)
-    print(f"Response:{response}")
+    state.response = ''.join(response_generator)
+    print(f"Response:{state.response}")
     time.sleep(5)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
@@ -871,7 +875,7 @@ def Gemini_Misinformation_ChatBot():
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_sens_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
-        me.text(f"Overall democratic Stance: {state.overall_stance_score}", type="headline-5")
+        me.text(f"Overall Political Stance: {state.overall_stance_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_stance_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Naive Realism: {state.overall_naive_realism_score}", type="headline-5")
@@ -884,6 +888,24 @@ def Gemini_Misinformation_ChatBot():
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
+
+    # create dataframe for table view in mesop interface
+    # using the response output for everything in table for now, will switch to the best prompting technique after
+    # we find out the best combo
+    overall_naive_realism_normal_score = re.search(r'overall\s*naive\s*realism\s*:\s*(\d+(\.\d+)?)', state.test_response, re.IGNORECASE)
+    overall_sens_normal_score = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response , re.IGNORECASE)
+    overall_stance_normal_score = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+    score_table = pd.DataFrame(
+      data = {
+        "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
+        "SCORE": [overall_sens_normal_score, overall_stance_normal_score, overall_naive_realism_normal_score, state.overall_social_credibility],
+        "CONSIDERATION": [state.response, state.response, state.test_response, "N/A calculated by Predictive AI"],
+        "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
+      }
+    )
+
+    with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15))):
+      me.table(score_table)
 
 # not sure why its giving me an error commenting it out for now
 # @me.page(path="/combined", title="Pred and Generative")
