@@ -6,7 +6,6 @@ First, rate each chunk of the article based on the defined microfactors of sensa
 2. Emotion Analysis: Assess the writing style for excessive emotionality or exaggeration.\
 3. Linguistic Database Comparison: Match linguistic features against databases of both \
 trusted and untrusted sources to ascertain reliability.\
-This should be done paragraph by paragraph. \
 Then, combine them into an overall score for sensationalism.\
 Lastly please phrase overall score as 'Normal Prompting Overall sensationalism: {score}'\
 where score is a float and the phrase should be in plain text with no bolding or italics",
