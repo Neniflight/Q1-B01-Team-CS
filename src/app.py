@@ -711,9 +711,38 @@ def create_reproducible_page(header_text: str, placeholder_text: str, prompt_adj
         style=me.Style(width="100%", padding=me.Padding.all(15))
       )
 
-@me.page(path='/test')
+@me.page(path='/test',stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+    ])
 def test():
-  create_reproducible_page("bro", "this is a nice prompt you have here", "execute this", navigate_to_ve)
+  with me.box(style=me.Style(width="100%", height="100vh", background="white", flex_direction="column", justify_content="flex-start", align_items="flex-start", display="inline-flex", margin=me.Margin.all(0), overflow="auto")):
+    with me.box(style=me.Style(align_self="stretch", padding=me.Padding.all(100), justify_content="space-between", align_items="flex-start", display="inline-flex")):
+      with me.box(style=me.Style(height="331px", flex_direction="column", justify_content= "flex-start", align_items="flex-start", display="inline-flex")):
+        with me.box(style=me.Style(padding=me.Padding.symmetric(vertical=50), flex_direction="column", justify_content="center", align_items="flex-start", gap="10px")):
+          me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 70px; font-weight: 700; margin: 0;">
+              Chenly Insights
+            </div>
+          """, mode='sandboxed', style=me.Style(width="100%", height=100, white_space="nowrap", margin=me.Margin.all(0)))
+          # me.text(text="Chenly Insights", type="headline-1", style=me.Style(background="linear-gradient(to right, #5271FF, #22BB7C)", font_family="Inter",  font_weight=700, "-webkit-background-clip": "text", "-webkit-text-fill-color": "transparent"))
+          me.text(text="Fight Against Misinformation", type="headline-3", style=me.Style(color="#010021", word_wrap="break-word",font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
+          me.text(text="By Calvin Nguyen and Samantha Lin", type="headline-5", style=me.Style(color="#A5A5A3", word_wrap="break-word", font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
+        with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=5, display="inline-flex")):
+          me.button("Try It Out!", type='flat')
+          me.button("Learn More")
+      me.image(src="https://media.istockphoto.com/id/1409182397/vector/spreading-fake-news-concept.jpg?s=2048x2048&w=is&k=20&c=veFBTYmO-wHEh7khaQ8wQWJN0-DO4Q2hQY7lrboIGbg=", style=me.Style(width="540px", height="485px"))
+    with me.box(style=me.Style(align_self="stretch", padding=me.Padding.symmetric(vertical=50, horizontal=100), background="linear-gradient(90deg, #5271FF 0%, #22BB7C 100%)", flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
+      me.text("Samples", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
+      with me.box(style=me.Style(justify_content="flex-start", align_items="flex-start", gap=30, display="inline-flex")):
+        me.button("Trusted News Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+        me.button("Satirical Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+        me.button("Sketchy Sources", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+      with me.box(style=me.Style(display="flex", align_self="stretch", justify_content="center")):
+        me.image(src="https://archive.org/download/placeholder-image/placeholder-image.jpg", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
+    with me.box(style=me.Style(align_self="stretch", padding=me.Padding.all(100), background="white", justify_content="space-between", align_items="flex-start", display="inline-flex")):
+      with me.box(style=me.Style(flex="1 1 0", padding= me.Padding(right=50), flex_direction="column", justify_content="flex-start", align_items="flex_start", gap=15, display="flex")):
+        me.text("Prompt Testing", type='headline-3', style=me.Style(color="#010021", font_family="Inter", font_weight="bold", word_wrap="break-word"))
+        me.markdown()
 
 @me.page(path="/")
 def home():
@@ -725,7 +754,6 @@ def home():
       me.button("Normal prompting", on_click=navigate_to_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Cot prompting", on_click=navigate_to_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Fcot prompting", on_click=navigate_to_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
