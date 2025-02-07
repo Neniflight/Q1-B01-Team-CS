@@ -715,7 +715,8 @@ def create_reproducible_page(header_text: str, placeholder_text: str, prompt_adj
         "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
     ])
 def test():
-  with me.box(style=me.Style(width="100%", height="100vh", background="white", flex_direction="column", justify_content="flex-start", align_items="flex-start", display="inline-flex", margin=me.Margin.all(0), overflow="auto")):
+  # see whether it is good on my computer
+  with me.box(style=me.Style(max_width=1440,width="100%", height="100vh", background="white", flex_direction="column", justify_content="flex-start", align_items="center", display="inline-flex", margin=me.Margin.all(0), overflow="auto")):
     with me.box(style=me.Style(align_self="stretch", padding=me.Padding.all(100), justify_content="space-between", align_items="flex-start", display="inline-flex")):
       with me.box(style=me.Style(height="331px", flex_direction="column", justify_content= "flex-start", align_items="flex-start", display="inline-flex")):
         with me.box(style=me.Style(padding=me.Padding.symmetric(vertical=50), flex_direction="column", justify_content="center", align_items="flex-start", gap="10px")):
@@ -728,8 +729,8 @@ def test():
           me.text(text="Fight Against Misinformation", type="headline-3", style=me.Style(color="#010021", word_wrap="break-word",font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
           me.text(text="By Calvin Nguyen and Samantha Lin", type="headline-5", style=me.Style(color="#A5A5A3", word_wrap="break-word", font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
         with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=5, display="inline-flex")):
-          me.button("Try It Out!", type='flat')
-          me.button("Learn More")
+          me.button("Try It Out!", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+          me.button("Learn More", style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
       me.image(src="https://media.istockphoto.com/id/1409182397/vector/spreading-fake-news-concept.jpg?s=2048x2048&w=is&k=20&c=veFBTYmO-wHEh7khaQ8wQWJN0-DO4Q2hQY7lrboIGbg=", style=me.Style(width="540px", height="485px"))
     with me.box(style=me.Style(align_self="stretch", padding=me.Padding.symmetric(vertical=50, horizontal=100), background="linear-gradient(90deg, #5271FF 0%, #22BB7C 100%)", flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
       me.text("Samples", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
@@ -741,9 +742,37 @@ def test():
         me.image(src="https://archive.org/download/placeholder-image/placeholder-image.jpg", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
     with me.box(style=me.Style(align_self="stretch", padding=me.Padding.all(100), background="white", justify_content="space-between", align_items="flex-start", display="inline-flex")):
       with me.box(style=me.Style(flex="1 1 0", padding= me.Padding(right=50), flex_direction="column", justify_content="flex-start", align_items="flex_start", gap=15, display="flex")):
-        me.text("Prompt Testing", type='headline-3', style=me.Style(color="#010021", font_family="Inter", font_weight="bold", word_wrap="break-word"))
-        me.markdown()
+        me.text("Prompt Testing", type='headline-3', style=me.Style(color="#010021", font_family="Inter", font_weight="bold", word_wrap="break-word", margin=me.Margin.all(0)))
+        me.markdown("""
+Here, you can test out different prompting techniques along with any adjustments that could be made to them. You can upload or link your own article and test it on the criteria for the factuality factor of **Naive Realism**. In total, there are **24 different ways** you could prompt!  
+There are **3 types** of prompting:  
+- **Normal**  
+- **Chain of Thought (COT)**  
+- **Fractal Chain of Thought (FCOT)**  
+                    
+Additionally, these prompts can be accompanied with a combination of the following:   
+- **Google Engine Search via SERP**  
+- **Vector Database Lookup**  
+- **Function Call**  
+          """, style=me.Style(font_family="Inter", font_size="16px", color="#010021"))
+        me.button("Try It Out", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+      with me.box(style=me.Style(align_self="stretch", flex_direction="column", justify_content="flex-start", align_items="flex-start", gap="33px", display="inline-flex")):
+        with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=75, display="inline-flex")):
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/fvui2nlaxlrxilubioil.png", style=me.Style(width=94, height=94))
+            me.text("Normal", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/jnbbfo7a8o4n9yomjnpi.png", style=me.Style(width=94, height=94))
+            me.text("CoT", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/ejlgqhtuusoxuybs7jhz.png", style=me.Style(width=94, height=94))
+            me.text("CoT", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+        me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738886394/capstone-dsc180b/trntngqmwxwoxvcnbkw5.png", style=me.Style(align_self="stretch", width=450, border_radius=10, height="auto"))
+    with me.box(style=me.Style(align_self='stretch', padding=me.Padding.all(100), background="white", flex_direction='column', justify_content='flex-start', align_items='flex-start', gap=50, display='inline-flex', border=me.Border(top=me.BorderSide(width="1px", color="#A5A5A3", style="solid")))):
+      with me.box(style=me.Style(align_self='stretch', flex_direction="column", justify_content="center", align_items="flex-start", gap=10, display='flex')):
+        me.text("About", type='headline-3', style=me.Style(font_family="Inter", font_weight='bold', color='#010021'))
 
+      # flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 50px; display: inline-flex">
 @me.page(path="/")
 def home():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
