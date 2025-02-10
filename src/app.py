@@ -93,6 +93,7 @@ class State:
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
+  response: str = ""
   # citation for using dict: https://github.com/google/mesop/issues/814
 
 # def page_load(e: me.LoadEvent):
@@ -106,7 +107,9 @@ def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
   state.uploaded = True
+  print('before get_headline')
   get_headline(state.chat_history)
+  print('after get_headline')
 
 def pdf_to_text(user_pdf):
   """converts the pdf the user uploads via the upload pdf button to string page by page
@@ -242,11 +245,12 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
+  state.response = ''
   for question in state.normal_prompting_question:
     print(f"Question:{question}")
     response_generator = transform(question, state.chat_history)  
-    response = ''.join(response_generator)
-    print(f"Response:{response}")
+    state.response = ''.join(response_generator)
+    print(f"Response:{state.response}")
     time.sleep(5)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
@@ -709,20 +713,130 @@ def create_reproducible_page(header_text: str, placeholder_text: str, prompt_adj
         style=me.Style(width="100%", padding=me.Padding.all(15))
       )
 
-@me.page(path='/test')
-def test():
-  create_reproducible_page("bro", "this is a nice prompt you have here", "execute this", navigate_to_ve)
-
-@me.page(path="/")
+@me.page(path='/',stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+    ])
 def home():
-  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
-    me.text("Welcome to Gemini Misinformation Detection System!", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
-    me.button("Veracity Engine In Entirety", on_click=lambda x: navigate_to(x, "/Gemini_Misinformation_ChatBot"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center", margin=me.Margin(bottom=20)))
-    me.text("click on the buttons below to check out different prompting techniques", type="headline-5", style=me.Style(margin=me.Margin(bottom=42)))
-    with me.box(style=me.Style(display="flex", flex_direction="row", gap=25)):
-      me.button("Normal prompting", on_click=navigate_to_normal, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Cot prompting", on_click=navigate_to_cot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Fcot prompting", on_click=navigate_to_fcot, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+  # see whether it is good on my computer
+  with me.box(style=me.Style(width="100%", height="100vh", background="white", flex_direction="column", justify_content="flex-start", align_items="center", display="flex", margin=me.Margin.all(0), overflow="auto")):
+    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
+      me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png", style=me.Style(height=48))
+      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
+        me.link(text="Try Chenly Insights", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+    with me.box(style=me.Style(max_width=1440, padding=me.Padding.all(100), justify_content="space-between", align_items="flex-start", display="inline-flex")):
+      with me.box(style=me.Style(height="331px", flex_direction="column", justify_content= "flex-start", align_items="flex-start", display="inline-flex")):
+        with me.box(style=me.Style(padding=me.Padding.symmetric(vertical=50), flex_direction="column", justify_content="center", align_items="flex-start", gap="10px")):
+          me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 70px; font-weight: 700; margin: 0;">
+              Chenly Insights
+            </div>
+          """, mode='sandboxed', style=me.Style(width="100%", height=100, white_space="nowrap", margin=me.Margin.all(0)))
+          # me.text(text="Chenly Insights", type="headline-1", style=me.Style(background="linear-gradient(to right, #5271FF, #22BB7C)", font_family="Inter",  font_weight=700, "-webkit-background-clip": "text", "-webkit-text-fill-color": "transparent"))
+          me.text(text="Fight Against Misinformation", type="headline-3", style=me.Style(color="#010021", word_wrap="break-word",font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
+          me.text(text="By Calvin Nguyen and Samantha Lin", type="headline-5", style=me.Style(color="#A5A5A3", word_wrap="break-word", font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
+        with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=5, display="inline-flex")):
+          me.button("Try It Out!", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+          me.button("Learn More", style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+      me.image(src="https://media.istockphoto.com/id/1409182397/vector/spreading-fake-news-concept.jpg?s=2048x2048&w=is&k=20&c=veFBTYmO-wHEh7khaQ8wQWJN0-DO4Q2hQY7lrboIGbg=", style=me.Style(width="540px", height="485px"))
+    with me.box(style=me.Style(align_self="stretch", background="linear-gradient(90deg, #5271FF 0%, #22BB7C 100%)", justify_content="center", display='flex')):
+      with me.box(style=me.Style(width="100%", padding=me.Padding.all(100), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
+        me.text("Samples", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
+        with me.box(style=me.Style(justify_content="center", align_items="flex-start", gap=30, display="inline-flex")):
+          me.button("Trusted News Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+          me.button("Satirical Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+          me.button("Sketchy Sources", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px"))
+        with me.box(style=me.Style(display="flex", align_self="stretch", justify_content="center")):
+          me.image(src="https://archive.org/download/placeholder-image/placeholder-image.jpg", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
+    with me.box(style=me.Style(max_width=1440, padding=me.Padding.all(100), background="white", justify_content="space-between", align_items="flex-start", display="inline-flex")):
+      with me.box(style=me.Style(flex="1 1 0", padding= me.Padding(right=50), flex_direction="column", justify_content="flex-start", align_items="flex_start", gap=15, display="flex")):
+        me.text("Prompt Testing", type='headline-3', style=me.Style(color="#010021", font_family="Inter", font_weight="bold", word_wrap="break-word", margin=me.Margin.all(0)))
+        me.markdown("""
+Here, you can test out different prompting techniques along with any adjustments that could be made to them. You can upload or link your own article and test it on the criteria for the factuality factor of **Naive Realism**. In total, there are **24 different ways** you could prompt!  
+There are **3 types** of prompting:  
+- **Normal**  
+- **Chain of Thought (COT)**  
+- **Fractal Chain of Thought (FCOT)**  
+                    
+Additionally, these prompts can be accompanied with a combination of the following:   
+- **Google Engine Search via SERP**  
+- **Vector Database Lookup**  
+- **Function Call**  
+          """, style=me.Style(font_family="Inter", font_size="16px", color="#010021"))
+        me.button("Try It Out", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+      with me.box(style=me.Style(align_self="stretch", flex_direction="column", justify_content="flex-start", align_items="flex-start", gap="33px", display="inline-flex")):
+        with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=75, display="inline-flex")):
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/fvui2nlaxlrxilubioil.png", style=me.Style(width=94, height=94))
+            me.text("Normal", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/jnbbfo7a8o4n9yomjnpi.png", style=me.Style(width=94, height=94))
+            me.text("CoT", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+          with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738885691/capstone-dsc180b/ejlgqhtuusoxuybs7jhz.png", style=me.Style(width=94, height=94))
+            me.text("CoT", type="headline-6", style=me.Style(font_family="Inter", font_weight='bold'))
+        me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738886394/capstone-dsc180b/trntngqmwxwoxvcnbkw5.png", style=me.Style(align_self="stretch", width=450, border_radius=10, height="auto"))
+    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', border=me.Border(top=me.BorderSide(width="1px", color="#A5A5A3", style="solid")))):
+      with me.box(style=me.Style(max_width=1440, padding=me.Padding.all(100), background="white", flex_direction='column', justify_content='flex-start', align_items='flex-start', gap=50, display='inline-flex')):
+        with me.box(style=me.Style(align_self='stretch', flex_direction="column", justify_content="center", align_items="flex-start", gap=10, display='flex')):
+          me.text("About", type='headline-3', style=me.Style(font_family="Inter", font_weight='bold', color='#010021', margin=me.Margin.all(0)))
+          with me.box(style=me.Style(align_self="stretch", justify_content='space-between', align_items='flex-start', display='inline-flex')):
+            me.text("This project was done for DSC 180 Capstone for the Winter 2025 Showcase. We collaborated with Dr. Ali Arsanjani, a Director at Google AI, on the subject “GenAI for Good”, where we fight against misinformation present in our society with AI. As a group of two, we present the Chenly Insights. A cutting edge technology that uses the latest generative and predictive AI to fight against misinformation in news article. You can upload or link different news articles and received detail breakdowns of its truthfulness depending on different factuality factors. You can view more information about our tool and its paper through the “Learn More” button. ", type="body-1", style=me.Style(font_family="Inter", color="#010021", word_wrap="break-word"))
+            me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png", style=me.Style(margin=me.Margin(left=30), width=430, height='auto'))
+        with me.box(style=me.Style(align_self="stretch", justify_content="center", align_items="flex-start", gap=150, display="inline-flex")):
+          with me.card(appearance="outlined", style=me.Style(font_family="Inter")):
+            me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; margin: 0;">
+              Calvin Nguyen
+            </div>
+          """, mode='sandboxed', style=me.Style(width="60%", height=55, white_space="nowrap", margin=me.Margin.all(0)))
+            me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; margin: 0;">
+              Data Science Major
+            </div>
+          """, mode='sandboxed', style=me.Style(width="40%", height=40, white_space="nowrap", margin=me.Margin.all(0)))
+            me.image(
+              style=me.Style(
+                width="100%",
+              ),
+              src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738913112/capstone-dsc180b/sy6z0sv7rij8h8wfq3dg.png",
+            )
+            with me.card_content():
+              me.text(
+                "I'm a senior Data Science major with a minor in Design. I love gaming, playing music, and machine learning."
+              )
+
+            with me.card_actions(align="end"):
+              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
+              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
+          
+          with me.card(appearance="outlined", style=me.Style(font_family="Inter")):
+            me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; margin: 0;">
+              Samantha Lin
+            </div>
+          """, mode='sandboxed', style=me.Style(width="60%", height=55, white_space="nowrap", margin=me.Margin.all(0)))
+            me.html("""
+            <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; margin: 0;">
+              Data Science Major
+            </div>
+          """, mode='sandboxed', style=me.Style(width="45%", height=40, white_space="nowrap", margin=me.Margin.all(0)))
+            me.image(
+              style=me.Style(
+                width="100%",
+              ),
+              src="https://res.cloudinary.com/dd7kwlela/image/upload/v1739064243/capstone-dsc180b/hvrc5w1len1npug2mk8o.png",
+            )
+            with me.card_content():
+              me.text(
+                "I’m a senior Data Science major with a minor in Business. I love watching anime and listening to music!"
+              )
+
+            with me.card_actions(align="end"):
+              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
+              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
 
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
@@ -873,7 +987,7 @@ def Gemini_Misinformation_ChatBot():
         me.text(f"Overall Sensationalism: {state.overall_sens_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_sens_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
-        me.text(f"Overall democratic Stance: {state.overall_stance_score}", type="headline-5")
+        me.text(f"Overall Political Stance: {state.overall_stance_score}", type="headline-5")
         me.progress_bar(mode="determinate", value=state.overall_stance_score*10, color='primary')
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Overall Naive Realism: {state.overall_naive_realism_score}", type="headline-5")
@@ -886,6 +1000,24 @@ def Gemini_Misinformation_ChatBot():
       with me.box(style=me.Style(margin=me.Margin.all(15), border=me.Border.all(me.BorderSide(width=10, color="black")), border_radius=10, width="30%")):
         me.text(f"Veracity Score: {state.veracity}", type="headline-4", style=me.Style(font_weight="bold"))
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
+
+    # create dataframe for table view in mesop interface
+    # using the response output for everything in table for now, will switch to the best prompting technique after
+    # we find out the best combo
+    overall_naive_realism_normal_score = re.search(r'overall\s*naive\s*realism\s*:\s*(\d+(\.\d+)?)', state.test_response, re.IGNORECASE)
+    overall_sens_normal_score = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response , re.IGNORECASE)
+    overall_stance_normal_score = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+    score_table = pd.DataFrame(
+      data = {
+        "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
+        "SCORE": [overall_sens_normal_score, overall_stance_normal_score, overall_naive_realism_normal_score, state.overall_social_credibility],
+        "CONSIDERATION": [state.response, state.response, state.test_response, "N/A calculated by Predictive AI"],
+        "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
+      }
+    )
+
+    with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15))):
+      me.table(score_table)
 
 # not sure why its giving me an error commenting it out for now
 # @me.page(path="/combined", title="Pred and Generative")
