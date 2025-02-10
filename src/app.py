@@ -825,25 +825,29 @@ def fcot_serp():
   create_reproducible_page("Fractal Chain of Thought Prompting with Vector Database and SERP API", naive_realism_fcot[0], (True, True, False))
 
 # About us page
-@me.page(path = "/")
+@me.page(path = "/about_us",stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+    ])
 def about_us():
   """
   contains general description, techonologies, about the members, and research paper.
   """
   with me.box(style=me.Style(background="White")):
   # header
-    with me.box(style=me.Style(background= "white", height= 90)):
-        me.html(
-          f'<img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAkACQAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABaASwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KKKACiiigArC8a+OvDvw38OXWv+KdbsfD+i2ozLfajOsMSk9Fyx5YngKOSeACa3a/Oz/gtVc3KfBLwHbpM62kniFmkhB+V3W2k2E+4y2Pqa2o0/bVFDuI+/PCXi/Q/Hvh2y17w3q9nrui3ql7e/wBPnWaGUAlThlJGQwII6ggg8itevz+/4Iv3Usn7OPi23aQmKLxTKyIf4d1rbZI9jiv0BorU/Y1HB9BhRRRWIBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABWJ411fVPD/AIR1jU9F0f8A4SHVrO1kuLbSfP8AIN46qWESvtbazYwMgjJGcDkbdeSftBftFaV+zfa+HNb8U6Vev4N1C9On6hr1mDKNKkYAwvLCoLtG+HBZclSqjDFwKqKcnZIDX+Bfx68H/tEeB7fxP4Q1D7RA3yXdhPtS7sJgSGhuIwSUcEH2I5UkEGvi/wD4LWZHwQ8An/qYz/6TS159+2X/AG1+yF8cNF/aS+DGt6fc+FfHEm3U7S1nWexvrj/WSFgpxJHOFLb1OVcOQQWWvDf25/8AgoFZfteeDvDPhzTfBs/hyDTLtdRmubq/WdnlMLI0SqqAbQXbDk5bA+Va9fC4eSqwq0/h/Izk+h9gf8EW/wDk3vxn/wBjO/8A6SW9fVvx8/aO8PfAmz0mznifX/GWvXMdloPhWxkUXeozu4ReufLjBPzSMMADAyxCn8if2Nf+Cg8n7JHwt8XeFofCCa9falcvqOn3j3hjiiuTEkYWWLblo8oGO1wTjbxncPpP9guC2vl8Xftf/HfxbYPcFprDTL/UJlP2QAFZWSNR8jlSYYokG4qzhVw65MVh37SdWe35hF9D9ObdpWt4zOiRzFQXSNy6q2OQGIGRnvgfQVJXnPwD+Mkfx7+HcHjay0O80PQ9QuJhpQ1Bl8+7tUbYtwyD/Vh2D4Uk/KFbPzYHo1eO1Z2ZoFFFFIAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKK5P4uX19pvwp8aXmmTSW2pW+i3sttNE2145VgcoynsQwBprV2A6yuS+LXwz0j4yfDXxH4K16PzNL1uze0lO0ExkjKSKD/EjhXHuor8eP8AgmT+2JZ/An4naj4Z8banJD4T8WtEp1G7mYxafeJuEcjZ4VHD7XbgDEbEhVJr9skdZFVlYMrDIZTkEetdFajPDzsxJ3P5vND+FPi3x58YbD4M6Xqv9uXcOuT6XZ/Zp5ZrBXEhSa5jGMiIpFvZwoOxMnpX6yW/wJ/ZO/YN8EaVH8RYdB1PWb5Np1LxJp39pXd9Ioy7w22yTyowTj5FAAKhnYnJ+BP2OXj+An/BRXQtJ8VSi3k0/XtR0Cec8j7RJHcWsZyf4WkdPm/utmvpj/grJ+yv8S/iV8RvD3j/AMH6BqPi7Ro9Jj0q4sdKia5urSVJpXDCBQXKOJR8yg4KndgEZ9rES9pVhTcuWLX3kRPWPFH7MX7Mn7dvw21TU/hImg6Pr1gDDDqnh2y/s8wTlSyJd2uxdyMf4mTcQp2twRX5W/Dz4V6jqH7Qnh34QeLLi40eObxXBoup2qyFlimNwIJMBcqX6qGHXI5xX6O/8Ek/2bfiN8JtQ8a+LPGmh33hTTtWtYLK00zU4mguJ3V2dpWhbDIFztG5RneccA18keINSh+OH/BUCC88J5vrO88d2phubECRXht5oxLcqV6psheTd6fNU4eUqcqlKMrxQpdD9y9F0Wx8N6NYaTpdrHY6ZYW8dra2sK7UhiRQqIo7AKAB9Ku1jeMvGWifD3wtqfiTxHqUGj6HpsLXF3e3LYSJB39SScAKMkkgAEkCvwx+M/7W/iL9o79sLw34x0m7vdI0nT9Ys7Lw9ZpJ5ckFutwCrMFP+skLFm5P3gmSFWvJoYeeIbt0NG7H7z0UUVyDPgP9sb9oD4i/Eb9pPw9+zN8H9dbwnql7Es2u+IoHaOeAGJrjykcANGFgVZC0bBnLhARghub+IP7JX7Qn7L+l2Xjz4TfGLxZ8SdUsZ4zqHhfUlkmS+V22u4haV1kGGAKkblBZ1cEcZvxr1o/st/8ABUzR/id4wYWfgPxjp62w1XyS6QYs0tXViR8rJLFC7beRHMDzkrX0v+0N/wAFBPhZ8EfAo1nR/EGjfEPW7iZILPQfD+sQzSTZYb2d4/M8tVUk5K8nCjrken78FBU43TX3k+p88/8ABSH40eOND0P9nDWtM1XxB8O7vW5JrnV9LtNQmsnicrZM0E4Qrv8ALZ3X5uOvrXt9j/wU8+BmofE238GpqmqRi4uhZweIJbHbpcshbau2Xdu2E9JNmzHO7HNfNf8AwVavrrxvoH7NN5r+iPoV5q8t1Le6NLMWks2lWyLwM+EO5N20nA5Bruv+CzGj2Vr+zz4Gmgs7eF7PxEltbvGgUwxNazZjTA+VTsTgf3B6VUacJwpxkt+YD65/aA/aY8A/sz+HLTVvHGqvam+kaKw0+0iM13euuC4ijHUKGXLMQo3KCcsAeO+Bf7c3wz+PfjF/COlnWfDnivyjPBoviXTzZ3FzGE3s0WGZWwvzYyDjJAIBI+Tv26U1Wx/4KBfBDVLjxPp/gXTpdGEWneJ9Y05b2xtLtZLkktHIVQuHkgG4kbPMjckba7DxN8JrjXP2pvhFqPjz9pzw7rnjrQ76O40vRtP8LR211e25kDyQF4bg7Q6hgN4IAZmAPNZewgqaberX9dB3PcPHP/BQb4R/Df4heM/BviG71Sw1jwtCklx/ogdbt3EZSG2CuXkkPmg/dAAVyxAUmtn9m39tr4Z/tSapqmk+EbjUrTXNOhNzPpesWogn8kMqGVdrMpUMyg/NkFhkCvmT9n/T7W7/AOCvnxuluLaKaa08PyTW7yxhmhkP9moXQnlSUkdcjqHYdCaPCdrFpn/BZjxZHZwpax3GgeZMsKBRIzWNuzM2O5YAk9zQ6NPVLdK4rs1v2M/jprei69+1t4g8X6x4i8U6L4R1+S4hsWuZLyS1tkmvjItvHI+EASMHaCBhB6V9Y/D39ozwb8SvgS3xc0u4uYfCEdnd30zXcQWeGO2Mgm3oGOCPKY4zyMHvXyT/AME3dOtdZ+Kn7W2n30Md3ZXXipoJ7eQZSSNp9QVlI7ggnP1r5W8R+OtY/Zw+EPx4/ZYje5l1q88WW1voLkFZ7iyuGUueDgCSKG2+X/p5k9K1nRjVqyjHfT7rCvpc/Wb9n/486B+0h8O4fGvhiy1Sy0aa5ltof7Wt1hklMZCs6hXYFd2VznqrelfJv7R3xE8VaJ/wVA+CPhnTvE+saf4d1DRraS70e2v5YrO4Yz6gC0sKnY5IVR8w/hX0r69+AnwptPgd8GvB/gSzMbpomnx2800QIWa4I3TygHkb5WkfHbdiviD9qL/lLV8Av+wHa/8ApTqNc9Hl9pK21mN7H0N44/4KFfCL4cePvGng/wAQXeqWWseFkQ3CizDi8kYIRFbBXLSPhwTlQoAJJAFbv7Nn7bHwz/amvtT03whdahaa5p0ZuJ9I1i1EFz5IYIZVCsysoZlU4bIJGQMjPzR+zlp1rdf8FZvjxcT28U09rozyQSSICYmJsFLITypKsy5HUMw71l/D+CPS/wDgtB8QYbKKO1gm0lWljhUIrM+m2cjsQOpZ/mPckkmrdGnqlulcLs+gPHn/AAUb+FXgrxjrvhuzsfFXjK70AyDWLjwxozXVvp5jYpJ5sjMgAVgQWGV96T47/Gr4O/HL9ibxV4wvdc1q/wDhrdLbwX9x4aCx6nbyC8gUR7JRhXWQx7lYYKHI3BgT83eCfhr4i8C+OviX4p/ZY+Png+70qS/l1PxF4V8U24iW22GRgjzOjMVDO6+YDEOQGc7c1j+IP2hD+0R/wS3+MOpt4K0fwXd6ZqtjZ3Efh61+z6ddP9tsX8xFzkPtZQyksQAhyd20V7CKace6/qwz7L8I/Gz4WfAH9kXwX4wn1rVLL4fw6Vax6ZNrbG41K6DpmKMqud8rAE7V+VQpPyovHm6/8FYPgh/whs3iCWPxNbGO7itV0ufTo0u5VdHYTRjzdjRjyyCQ+QWUEfMK+Ov2yNNv/wDhif8AZH1OW3up/CdrYmHVFhbajSvDbtEpGc7ikVztPb5uma9X/wCCrHxk+FfxD/Zr8E6f4M8UeHdd1BdbgurO10meOWW2sxazK2VTmFctCNjbTlQMfIcaRw9OUldN3b+VieY7j9vb46X/AIb+I37JviPRvFeq+F/Cet6q1/qYhvZLSK4sjNpkmLlUbDKI3fKtkDc3rXq/gn/gpd8FPHnxVsvAlje6za3uoXQs7DUr7TjDZXkrMEjVGLbxvYgKXRRyM4r5p/bK0uz17VP2CtN1G1jvLC8mt7a5tpVykkbnSFdGHoVJH41sf8Ff7eKDxV+z9cxRrFc/2peoJkADBVezKjOM4BJI9Mn1pRpwnGnBrfmGdB+21/wUI1f4FftIeDfBnh2S+tdJ0i7hk8XQnTYZjf28v2eVUtnc53CJpVJBT5mHPANfRHin9uT4W+Cfgz4Z+JGvXmo6XpviXzP7J0mazJ1K7ZHKuFhUnGOCSWCjcozllB+dP+Ck2pWmhftPfsoapqVxFp+mWuvySz3ly4jiiRbuwZ2Z24CheSewrtf+Cgngf4afFqP4Vahqfxes/hv4ss72S58J6tIguLO7Z2g3EsuAoV0tz5u/agJLAgjEOnTcaV1vuGp6b8Hf27fht8Y/H8XgeK38Q+EfF1xF51ppHizS2sZrtNm/MfzMp+T5gCQSOQDzX0VX51eH/wBoL4u/B/8Aao+Gnw3+Mlt4A+Juoa8yQ2XibQLZRqdiszFFcsEQRjqzKI1DLuKscEV+itclan7Nq3UYUUUVgMKralp8OraddWNyu+3uonhlX1VgQR+RqzRQB+Ef7HfwB8M/ED9obx/8EfiFFJY6hd2V9p1hdwKhnsNRtJ1ffGW9EjnyP4hnpwR9W/CX9pD4g/8ABPvxRafCb4+2l9q3w7Mv2fw742t42mWG3UgBe5kiRSpMY/exDgKy7QOG/wCCm/wf8RfAP9oLw5+0N4JRbW3vLy3lubiBBi01KEDaZF+6UmjTnruKyBvvDd93/DHx58MP29fgHBeXukWev6LeYi1PRNQTdJYXir8yZ6q67spIpBIYEEZr269TngqjV4vfyZJ8Xf8ABQj9jW4+NF5H8efgnLF4wj1KOJtTsNCZZ3mZAFW7t9h+c4VVdRlgVDYOX2+f/A//AIK++Pvhnoq+HfiN4XXx1NYj7PHqL3ZsdQGzjE+Y3EjDGNxVWPVixya981T/AIJ9/Fn9nHxPqPiT9mL4lNplhc/vJvCfiCTdHJhcBNzK0Ux5faZERkB/1hPNfIv7e158d9Z0jQ9Q+NXwn8K+ErxbpYY/FOj20X2zUHEJxDLPHcSB1CjIXA27e2DWlHkqqNKTUo/cxHYfHv8A4Ko/Eb4/6QPBHw88KN4Pj1bNpObG4fUNSvA4K+VEyxrsBDchVLnAAYDIPrv7G37P3hz9g/wTd/HD48ana+H/ABHd2jQ6Poc21rq1iYfMqxjl7mQEDYn+rQneRucJ89/sEr+0X/wi/iMfArwd4ckW5vVt73xnqUNsLqyJRSYUkmk5jxtcoI3OSDxnn7K+F/8AwTIuPEvjh/Hn7RvjWb4qeJGxs0uKWUWMeM8M7bXdASCsaLEi4IIYHAK3sqN6Sdo+W7DU81WH4m/8FWPHED3MOp/Dn9nLTJiw2Mnn6pIjY4yMPMcnnDRQ7f4n+/4f4i8B6B4m/wCCqHh/wT4L0uC08MaDr+mWMGnWqYSOGwgie6U9yd0E7MzEljkkk81+l37XH7SHh39j34FyX1pFY22sPbnTfC+hRIqRtMseExEuMQQrtLYwoAVcguufkr/gkh+z7qWpah4k+PXjCGS41HVJJrTR571CZJWd913eAsP4m/dhwcn9+DxjOVOo4051UrR2SH1P02ooorxSjl/iN8L/AAn8XPDcugeMvD9j4j0iRt/2a+iDhHwQHQ9UcAnDKQRk815Z8N/2D/gN8JfE0HiHwz8ObC21i3YPBc3lzc33kMDkPGtxK6owPRlAI9a97oq1OSVkwPPviv8AAHwB8cJtDl8ceHIdfk0OV59OaWaWM27vt3EeW65zsTrn7tWPi78EPBHx48P22h+PNAi8Q6VbXIu4beaaWIJKFZQwMbKfuuw645ruaKXM1azA4v4q/BnwR8b/AA1/YHjnw3ZeI9LD+ZHFdKQ0Tf3o5FIeM44ypBxkdK434O/sc/Bv4B64+teBvAtlo+sMpQX8s895PGpGCI3nkdo8gkHaRkHBr2aijmlblvoBwWg/ArwL4X+KmufEnS/D8Np421u3+yahqyzSs88X7r5ShcoP9TF91QfkHvRD8CfAlv8AFy4+J8fh6FPHlxbi0l1kSy72iCKgXZu2fdVRnbniu9opXYHnfhP4R+Cvgh/wmviLwh4Wa11HXJH1XVY7B5JptQnXzHAVXcgMWkfCrgZevhz4f/A3x7+1L+3Vpfxo8b/C29+F/hXw9DbXH2TVJM3F9eQJ/o56KWIcqxYKFCQBTy3P6T0VtGtKN31fUQVwHiT4C+AvF3xQ0P4jav4dhvfGmiQrb6fqzTSq8EatIyqEDhDgyyH5lP3q7+isb22GcJ4e+Bvgbwr8Ttd+Iek+H4bPxlrkP2fUdVWWUvPHmMlSpYoOYo/uqPuiobT4B+AbH4vXnxRg8Owx+PbyEQXGsieXfJGIki2lN+z7kaL93+H1r0Gii7A8C+I37B3wG+LHiy88TeJvh5Z3et3j+bc3VreXVn50h6u6wSorOTyWIyTySa7i7/Z3+G958JZvhi3hHT4fAcwjEui2oaCKQpIsqszIQxbeisWLZYjknJr0Wiq55aa7AeDftB+EtR8C/s0y+GPht8LtE+IOn6fBDZL4O1aQmFrJBx5atnzZEZY2CllY4LBi4VW+Dvi/8J9R+PHgDQvhj8Jv2WPEXwovbzW7fU9X1nXLP7Lax+XFNHsM7jMkaiYt1H3cKjM1frVRW1Ou6eq3EeW3n7NvgXxFp/w1TxNo8fiHUvh/HANE1CZ5ImgljEP70KjgElreJsNuHyitH4r/AAB8AfHCbQpfHHhyHX5NDmefTmlmljNu77dxHluuc7E4OR8teg0VhzSve4zz/wCMnwD+H/7QOg22j/EDwza+I7G1l863815IpYWOMlJY2V1BwMgMAcDOcCsnWP2V/hV4i+FekfDnVPBtnqPg/SE8vT7G6lmke1BJJ8ucv5qnnqHz09BXq1FHNJbMDxj4P/sb/Br4C+IG13wP4Fs9H1ko0a30txcXc0SsMMI2nkcx5HB2YyODxXs9FFEpOTvJ3AKKKKkAooooA5r4kfDvQfiz4F1rwh4nsV1HQtWtzb3MDHBxkEMp/hdWCsrDkMoI6V+O/jT4c/Gn/glr8XW8UeF55NX8B39x5CXjq72N/FklILxFwI5gucEc8MUOMiv2tqlrGi6f4i0u60zVbG21PTbqMxXFneQrLDMh6q6MCGB9CK6qGIdG6avF7oTVz5d/Z/8A+ClXwa+N2mWseo67b+APErJ+/wBI8Q3Cwxh8DIiuW2xyDPAztY/3BXjf/BaG6huPgH4BlhlSWKXxEJI5I23Ky/ZZiGGOCMEfnWv8aP8Agjz8M/HF5caj4F1vUPh/dynebIp9usQcDhEdlkTJyf8AWMBnhQBivlzXP+COvxwsQLex8Q+EdWsVkJjVdRuYiP8AaZGgAB+hau+jHDKoqkJ28n/mTqfRX/BHDWtP0L9nHx7f6nfW2m2Nt4iaSe6u5ViiiX7ND8zMxAUe5r0X9oz/AIKlfCj4RaVeWng7UIPiP4rGUht9LlJsI24+aW6AKsoBJxFvJ24JXOR8eeGf+CM/xf1KeCPXfFvhPRdPZ8ym2uLm6mT/AGhH5KKx+sgr64+A/wDwSb+Efwo1C11bxPLdfEjWbchkXVY1h09WBBDfZVJ39CCsjupB5XPNFb6r7R1JSv5INT5G+CP7PPxU/wCCk3xaT4nfFa7vLH4fq5X7QgMKSwoTizsIznamchpMY4YlmcnP7CeH9B07wroWnaLpFnFp+lafbx2lpaQLhIYkUKiKPQAAfhVu1tobK3it7eJILeFBHHFEoVUUDAUAcAAcYFS159au6z2slsikrBRRRXMMKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/2Q=="  alt="" />'
-          # citation: https://www.base64-image.de/
-          # used this website to convert image from jpg to base64
-        )
+    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
+      me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png", style=me.Style(height=48))
+      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
+        me.link(text="Try Chenly Insights", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
   # second header
     with me.box(style=me.Style(background= "linear-gradient(to right, #5271FF , #22BB7C)", 
-                height= 280 - 90, 
-                padding = me.Padding.symmetric(vertical=70, horizontal= 100))):
+                height= 280, 
+                padding = me.Padding.symmetric(vertical=100, horizontal= 100),
+                margin = me.Margin.symmetric(vertical = 50))):
           me.text(text="About Us", type="headline-2", 
-                style={"font-weight":"bold", "color":"white"})
+                style = me.Style(font_weight = "bold", color ="white", font_family = "Inter"))
   # general description section
     with me.box(style=me.Style(background= "white", display = "flex", flex_direction = "row", align_items="center", 
       height = 600)):
@@ -853,7 +857,7 @@ def about_us():
         padding = me.Padding.symmetric(vertical=50, horizontal= 100)
       )):
         me.text(text = "General Description", type="headline-3", 
-            style = {"font-weight":"bold", "color":"Black"})
+            style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter"))
         me.text(text = "This project was done for DSC 180 Capstone for the Winter 2025 Showcase. We collaborated with Dr. Ali Arsanjani, a Director at Google AI, on the subject “GenAI for Good”, where we fight against misinformation present in our society with AI. As a group of two, we present the Chenly Insights. A cutting edge technology that uses the latest generative and predictive AI to fight against misinformation in news article. You can upload or link different news articles and received detail breakdowns of its truthfulness depending on different factuality factors.",
                 style = me.Style(font_size=30))
       with me.box(style=me.Style(background= "white", 
@@ -876,7 +880,7 @@ def about_us():
         padding = me.Padding.symmetric(vertical=50, horizontal= 100)
       )):
         me.text(text="Technologies", type="headline-3", 
-            style = {"font-weight":"bold", "color":"Black"})
+            style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter"))
         with me.box(style=me.Style(background= "white",
         height = 400,
         width = 1050,
@@ -908,10 +912,10 @@ def about_us():
         padding = me.Padding.symmetric(vertical=50)
       )):
         me.text(text="About the Members", type="headline-3", 
-            style = {"font-weight":"bold", "color":"Black"})
+            style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter"))
         me.text(text="We are Calvin Nguyen and Samantha Lin! We are the main builders of this tool, but everyone else within B01 of DSC 180AB helped as well. We are both data science majors and will be graduating Spring 2025. Please connect with us on Linkedin and you can see our prior work with our Github.", 
                 style = me.Style(font_size=30))
-  with me.box(style=me.Style(background= "White", display = "flex", flex_direction = "row", align_items="center", justify_content="space-around",
+  with me.box(style=me.Style(background= "white", display = "flex", flex_direction = "row", align_items="center", justify_content="space-around",
       height = 1100, width = 1250+1050+100, padding = me.Padding.symmetric(vertical=50, horizontal= 100))):
     with me.box(style=me.Style(background= "White", 
       height = 950, width = 605, border=me.Border.all(me.BorderSide(width=3, color="#5271FF", style="solid")), border_radius=30)):
@@ -977,10 +981,10 @@ def about_us():
         padding = me.Padding.symmetric(vertical=50)
       )):
         me.text(text="Research Paper", type="headline-3", 
-            style = {"font-weight":"bold", "color":"Black"})
+            style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter"))
         me.text(text="Below, you can read through the research paper. Feel free to download it as well!", 
                 style = me.Style(font_size=30))
-  src = "https://drive.google.com/file/d/1LmaWaZMPLl2oz-8qH0SBXNIQ_9JmvUZm/view?usp=sharing"
+  src = "https://drive.google.com/file/d/1LmaWaZMPLl2oz-8qH0SBXNIQ_9JmvUZm/view?usp=sharing" # this isn't working now cuz we need google drive access to see the doc :(
   me.embed(
     src=src,
     style=me.Style(width=1250+1050, height="100%", padding = me.Padding.symmetric(horizontal= 20)),
