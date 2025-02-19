@@ -35,6 +35,9 @@ load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
+chroma_client = chromadb.HttpClient(host="localhost", port=8000)
+collection = chroma_client.get_collection("Misinformation")
+
 generation_config = {
     "max_output_tokens": 4000, # less output, means faster
     "response_mime_type": "text/plain",
@@ -282,8 +285,6 @@ def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, even
     user_article_title = state.article_title
     print(user_article_title)
     # Connecting to the vector database to allow for more informed prompts
-    chroma_client = chromadb.HttpClient(host="localhost", port=8000)
-    collection = chroma_client.get_collection("Misinformation")
     vdb_results = collection.query(query_texts=[user_article_title], n_results=3)
     vdb_results = str(vdb_results['metadatas'])
     vdb_str = f"ChromaDB Info: Based on the headline, these are the most similar statements: {vdb_results}"
