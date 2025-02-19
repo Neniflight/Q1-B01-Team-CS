@@ -949,6 +949,45 @@ def fcot_serp():
 def fcot_serp():
   create_reproducible_page("Fractal Chain of Thought Prompting with Vector Database and SERP API", naive_realism_fcot[0], (True, True, False))
 
+# About us page 
+@me.page(path="/pipeline_explanation", stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+    ])
+def pipeline_explanation():
+  """
+  contains an explanation of how the pipeline works
+  """
+  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
+    # nav bar
+    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
+      me.html(
+        """
+        <a href="/">
+          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
+        </a>
+        """
+      )
+      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
+        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+  # header
+    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
+      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
+          me.text(text="Pipeline Explanation", type="headline-2", 
+                style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
+    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
+      with me.box(style=me.Style(width="100%", padding=me.Padding(top=100, right=100, left=100, bottom=20), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
+        me.text(text = "Pipeline", type="headline-3", style = me.Style(font_weight = "bold", color ="010021", font_family = "Inter", margin=me.Margin.all(0)))
+        me.text(text = "Our pipeline consists the Liar Plus Dataset, ChromaDB, Articles online, Predictive AI, and Generative AI that work together to come up with a veracity score for an user inputted article. A user will upload an article that they are interested to see whether there is misinformation. It is fed into both predictive AI and generative AI. Each type of AI has their own models and factuality factors to judge the article off of. The generative AI also is connected to a Docker server that contains a ChromaDB image of similar statements to the headline that are true. All of these factors work together to come up with a veracity score.", type="body-1", style=me.Style(font_family="Inter"))
+    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
+      with me.box(style=me.Style(width="100%", padding=me.Padding(top=100, right=100, left=100, bottom=20), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
+        me.text(text = "LucidChart", type="headline-3", style = me.Style(font_weight = "bold", color ="010021", font_family = "Inter", margin=me.Margin.all(0)))
+        me.text(text = "If you would like to view the entirety of the pipeline, we have visualized it on LucidChart embed below! ", type="body-1", style=me.Style( font_family="Inter"))
+        me.embed(src="https://lucid.app/documents/embedded/7babda6c-da85-49d9-bb0c-83fd85deffdf", style=me.Style(width="960px", height="720px"),)
+
+
 # About us page
 @me.page(path = "/about_us",stylesheets=[
         "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
