@@ -1273,7 +1273,7 @@ def uploadpdf():
           """, mode='sandboxed', style=me.Style(width="100%", height=100, white_space="nowrap", margin=me.Margin.all(0)))
      # user upload section
     with me.box(style=me.Style(width="90%", height="80%", background="white", align_items="center", margin=me.Margin.symmetric(vertical = 100), overflow="auto", border=me.Border.all(me.BorderSide(width=3, color="Black", style="solid")), border_radius=30)):
-      with me.box(style=me.Style(background= "pink", align_content="center", height= 80, width="100%", padding = me.Padding.symmetric(vertical=70, horizontal= 50))):
+      with me.box(style=me.Style(background= "white", align_content="center", height= 80, width="100%", padding = me.Padding.symmetric(vertical=70, horizontal= 50))):
         me.text(text = "Upload your PDF or enter a link:", type = "headline-4", 
                   style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter",
                   padding = me.Padding.symmetric(vertical=15, horizontal= 70)))
@@ -1315,7 +1315,7 @@ def analyzing():
           """, mode='sandboxed', style=me.Style(width="100%", height=100, white_space="nowrap", margin=me.Margin.all(0)))
     # user upload section
     with me.box(style=me.Style(width="90%", height="80%", background="white", align_items="center", margin=me.Margin.symmetric(vertical = 100), overflow="auto", border=me.Border.all(me.BorderSide(width=3, color="Black", style="solid")), border_radius=30)):
-      with me.box(style=me.Style(background= "pink", align_content="center", height= 80, width="100%", padding = me.Padding.symmetric(vertical=70, horizontal= 50))):
+      with me.box(style=me.Style(background= "white", align_content="center", height= 80, width="100%", padding = me.Padding.symmetric(vertical=70, horizontal= 50))):
         me.text(text = "Upload your PDF or enter a link:", type = "headline-4", 
                   style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter",
                   padding = me.Padding.symmetric(vertical=15, horizontal= 70)))
