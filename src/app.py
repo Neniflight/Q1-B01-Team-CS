@@ -25,6 +25,7 @@ import pandas as pd
 import xgboost as xgb
 import numpy as np
 import chromadb
+import matplotlib.pyplot as plt 
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
@@ -1137,6 +1138,104 @@ def about_us():
           style=me.Style(width="100%", height=800)
         )
 
+@me.page(path = "/deep_analysis",stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+    ])
+def deep_analysis_page():
+  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
+    # nav bar
+    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
+      me.html(
+        """
+        <a href="/">
+          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
+        </a>
+        """
+      )
+      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
+        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
+      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
+        me.text(text="Chenly Insights - Deep Analysis", type="headline-2", style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
+    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
+      with me.box(style=me.Style(width="100%", padding=me.Padding(top=50, right=100, left=100, bottom=50), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=40, display="inline-flex")):
+        # if you want to do score with special text colors, make this into a me.box with two different texts 
+        me.text("Score: " + "{insert score here}", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
+        with me.box(style=me.Style(width="100%", justify_content='flex-start', align_items='flex-start', gap=30, display='flex', flex_wrap='wrap')):
+          # article title
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
+            me.text("Article Title", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.text("{Insert Title Text}", style=me.Style(font_size=16, font_family="Inter"))
+          # author
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
+            me.text("Author", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.text("{Insert Author Text}", style=me.Style(font_size=16, font_family="Inter"))
+          # Date
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
+            me.text("Date", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.text("{Insert Date Text}", style=me.Style(font_size=16, font_family="Inter"))
+          # Source
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
+            me.text("Source", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.text("{Insert Source Text}", style=me.Style(font_size=16, font_family="Inter"))
+          # Topic
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
+            me.text("Topic", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.text("{Insert Topic Text}", style=me.Style(font_size=16, font_family="Inter"))
+        with me.box(style=me.Style(width="100%", justify_content='space-around', align_items='flex-start', gap=30, display='flex')):
+          # plot
+          categories = ["Stance Detection", "Naive Realism", "Sensationalism", "Social Credibility"]
+          values = [4, 3, 5, 2] 
+          num_vars = len(categories)
+          angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+          values += values[:1]  
+          angles += angles[:1]  
+          fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+          ax.set_xticks(angles[:-1])
+          ax.set_xticklabels(categories)
+          ax.set_ylim(0, 6)
+          ax.plot(angles, values, color='b', linewidth=2, linestyle='solid')
+          ax.fill(angles, values, color='b', alpha=0.3)
+          ax.set_yticks(range(0, 7))
+          ax.set_yticklabels(map(str, range(0, 7)))
+          plt.title("Radar Chart for Article Analysis")
+          
+          me.plot(fig, style=me.Style(width="100%"))
+          # summary
+          with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=700, width="50%")):
+            me.text("Summary", style=me.Style(font_size=24, font_weight="bold", font_family="Inter"))
+            me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
+            me.markdown("""
+The CNN Politics article discusses former President Donald Trump's response to a deadly midair collision over Washington, D.C., which killed 67 people. In his first major national crisis since returning to office, Trump quickly blamed Democrats and diversity initiatives in the federal government for the crash, despite the investigation being in its early stages. During a White House briefing, he criticized past administrations, particularly Biden and Obama, and linked the disaster to what he called lowered aviation standards due to diversity-focused hiring practices.
+                        
+Trump also took aim at former Transportation Secretary Pete Buttigieg, sarcastically criticizing his leadership. His remarks sparked backlash, with Buttigieg responding that Trump had already taken control of the FAA and military and should focus on actual solutions. Despite having no evidence to support his claims, Trump issued a presidential memorandum calling for a review of aviation policies and hiring practices.
+                        
+The article highlights how Trump's handling of the tragedy follows a familiar pattern from his first term—using crises to push political narratives and assign blame rather than focusing on immediate solutions. It also notes his aggressive approach in dealing with reporters and his broader efforts to reshape government policies in his second presidency.
+            """, style=me.Style(font_family="Inter", font_size=16, color="#010021", margin=me.Margin.symmetric(vertical=0)))
+        me.text("Score Table", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
+        score_table = pd.DataFrame(
+        data = {
+            "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
+            "SCORE": [5, 3, 2, 1],
+            "CONSIDERATION": ["Sensationalism Consideration", "Political Stance Consideration", "Naive Realism Consideration", "Social Credibility Conderation"],
+            "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
+          }
+        )
+        me.table(score_table)
+        with me.box(style=me.Style(height=600, width="100%")):
+          mel.chat(
+            transform, 
+            title="Gemini Misinformation Helper", 
+            bot_user="Chenly", # Short for the Vietnamese word for Truth
+          )
 
 
 @me.page(path="/Gemini_Misinformation_ChatBot")
