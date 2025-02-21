@@ -25,6 +25,7 @@ import pandas as pd
 import xgboost as xgb
 import numpy as np
 import chromadb
+import asyncio
 from questions import predefined_questions
 from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
@@ -1226,6 +1227,7 @@ def adjusting():
 
 @me.page(path='/uploadpdf', stylesheets=[
   "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+  # if coming here from "clear article button", we need a on_load func to reset the state variables
 ])
 def uploadpdf():
   s = me.state(State)
@@ -1255,7 +1257,6 @@ def uploadpdf():
       with me.box(style=me.Style(width="100%", max_width=1440, background='white', padding=me.Padding.symmetric(horizontal=100, vertical=70), flex_direction='column', justify_content='center', align_content='center', display='flex', gap=10, min_height=750)):
         with me.box(style=me.Style(align_self='stretch', flex="1 1 0", padding=me.Padding.all(50), border_radius=10, border=me.Border.all(me.BorderSide(width=1, color="#010021", style='solid')), flex_direction='column', justify_content='flex-start', align_items="left", gap=50, display='flex')):
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
-            me.text(text = "Upload your PDF or enter a link:", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
             with me.box(style=me.Style(align_self='stretch', justify_content='space-between', align_items='flex-start', display='flex')):
               with me.box(style=me.Style(justify_content='flex-start', align_items='flex-start', gap=28, display='flex')):
                 with me.content_uploader(
@@ -1274,46 +1275,127 @@ def uploadpdf():
               with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
                   me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
 
-
-@me.page(path='/analyzing')
+# might need to skip this page and go straight to the results page 
+@me.page(path='/analyzing', stylesheets=[
+  "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+],
+)
 def analyzing():
   s = me.state(State)
-  with me.box(style=me.Style(width="100%", height="100vh", background="white", flex_direction="column", justify_content="flex-start", align_items="center", display="flex", margin=me.Margin.all(0), overflow="auto")):
-    # first header
+  
+  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
+    # navbar
     with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
-      me.image(src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png", style=me.Style(height=48))
+      me.html(
+        """
+        <a href="/">
+          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
+        </a>
+        """
+      )
       with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
-        me.link(text="Try Chenly Insights", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
-        me.link(text="Prompt Testing", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="Pipeline Explanation", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="About Us", url="/", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+
     # second header
-    with me.box(style=me.Style(background= "linear-gradient(to right, #5271FF , #22BB7C)", align_content="center", 
-    height= 280, width="100%", padding = me.Padding.symmetric(vertical=150, horizontal= 50))):
-      me.html("""
-            <div style="background: white; -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 70px; font-weight: 700; margin: 0;">
-              Chenly Insights
-            </div>
-          """, mode='sandboxed', style=me.Style(width="100%", height=100, white_space="nowrap", margin=me.Margin.all(0)))
-    # user upload section
-    with me.box(style=me.Style(width="90%", height="80%", background="white", align_items="center", margin=me.Margin.symmetric(vertical = 100), overflow="auto", border=me.Border.all(me.BorderSide(width=3, color="Black", style="solid")), border_radius=30)):
-      with me.box(style=me.Style(background= "white", align_content="center", height= 80, width="100%", padding = me.Padding.symmetric(vertical=70, horizontal= 50))):
-        me.text(text = "Upload your PDF or enter a link:", type = "headline-4", 
-                  style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter",
-                  padding = me.Padding.symmetric(vertical=15, horizontal= 70)))
-      with me.box(style=me.Style(width="100%", display='flex', top=0, overflow='hidden', justify_content="flex-start", align_content="center", background='white', padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
-        me.button(label="Upload PDF", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(vertical=10, horizontal=50), background="#5271FF", color="white"))
-        with me.box(style=me.Style(justify_content="flex-start", align_items="left", gap=5, display="flex", width = "16%", background = "white")):
-          me.input(label="Link input", appearance="outline", style=me.Style(width = "150%"))
-          me.text(text=s.input)
-        with me.box(style=me.Style(justify_content="flex-start", align_items="left", gap=5, display="flex", width = "63%", background = "white")):
-          me.text(text = "Analyzing your article (Could take from 1-2 minutes)", type = "headline-6", style = me.Style(margin=me.Margin.symmetric(vertical=10, horizontal=0), font_weight= 700))
-          # me.link(text="submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=23, font_weight='bold', background="#5271FF", padding=me.Padding.symmetric(vertical=8, horizontal=20), border_radius=10, margin = me.Margin.symmetric(vertical=10, horizontal=10)))
-        with me.box(style=me.Style(justify_content="left", align_items="right", gap=40, display="flex", background = "white")):
-          me.link(text="Adjust Selection", url="/starting", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold', background="White", padding=me.Padding.symmetric(vertical=8, horizontal=10), border=me.Border.all(me.BorderSide(width=2, color="#5271FF", style="solid")), border_radius=5, ))
+    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
+      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
+        me.text(text="Chenly Insights - PDF", type="headline-2", style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
+
+    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
+      with me.box(style=me.Style(width="100%", max_width=1440, background='white', padding=me.Padding.symmetric(horizontal=100, vertical=70), flex_direction='column', justify_content='center', align_content='center', display='flex', gap=10, min_height=750)):
+        with me.box(style=me.Style(align_self='stretch', flex="1 1 0", padding=me.Padding.all(50), border_radius=10, border=me.Border.all(me.BorderSide(width=1, color="#010021", style='solid')), flex_direction='column', justify_content='flex-start', align_items="left", gap=50, display='flex')):
+          with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
+            with me.box(style=me.Style(align_self='stretch', justify_content='space-between', align_items='flex-start', display='flex')):
+              with me.box(style=me.Style(justify_content='flex-start', align_items='flex-start', gap=28, display='flex')):
+                with me.content_uploader(
+                  accepted_file_types=["pdf"],
+                  on_upload=handle_upload,
+                  type="flat",
+                  color="primary",
+                  style=me.Style(font_weight="bold", background="#5271FF", height=50),
+                ):
+                  with me.box(style=me.Style(display="flex", gap=5)):
+                    me.icon("upload")
+                    me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
+                me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
+                with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                  me.link(text="Submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                  me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
       # spinner
-      with me.box(style=me.Style(display="flex", flex_direction="row", justify_content="space-around", width="40%")):
-        me.progress_spinner()
+          with me.box(style=me.Style(align_self='stretch', display='flex', justify_content='center')):
+            me.progress_spinner()
+
+@me.page(path='/results', stylesheets=[
+  "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+])
+def results_page():
+  s = me.state(State)
+  
+  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
+    # navbar
+    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
+      me.html(
+        """
+        <a href="/">
+          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
+        </a>
+        """
+      )
+      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
+        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
+
+    # second header
+    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
+      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
+        me.text(text="Chenly Insights - Results", type="headline-2", style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
+
+    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
+      with me.box(style=me.Style(width="100%", max_width=1440, background='white', padding=me.Padding.symmetric(horizontal=100, vertical=70), flex_direction='column', justify_content='center', align_content='center', display='flex', gap=10, min_height=750)):
+        with me.box(style=me.Style(align_self='stretch', flex="1 1 0", padding=me.Padding.all(50), border_radius=10, border=me.Border.all(me.BorderSide(width=1, color="#010021", style='solid')), flex_direction='column', justify_content='flex-start', align_items="left", gap=50, display='flex')):
+          with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='center', display='flex', gap="100px")):
+            with me.box(style=me.Style(align_self='stretch', justify_content='space-between', align_items='flex-start', display='flex')):
+              with me.box(style=me.Style(justify_content='flex-start', align_items='flex-start', gap=28, display='flex')):
+                with me.content_uploader(
+                  accepted_file_types=["pdf"],
+                  on_upload=handle_upload,
+                  type="flat",
+                  color="primary",
+                  style=me.Style(font_weight="bold", background="#5271FF", height=50),
+                ):
+                  with me.box(style=me.Style(display="flex", gap=5)):
+                    me.icon("upload")
+                    me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
+                me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
+                with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                  me.link(text="Submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                  me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
+            with me.box(style = me.Style(flex_direction='column', justify_content='flex-start', align_items='center', gap=50, display='flex')):
+              with me.box(style=me.Style(display='flex', justify_content='center', align_items='flex-start', gap=65)):
+                with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', gap=5, display='flex')):
+                  me.text("This article is found to be", type="headline-4", style=me.Style(color="#DA5D39", font_family="Inter", margin=me.Margin.all(0)))
+                  me.text("{Insert your Score here}", type="headline-4", style=me.Style(color="#DA5D39", font_family="Inter", font_weight='bold', margin=me.Margin.all(0)))
+                me.icon(icon="emergency_heat", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64)) # pants on fire
+                # me.icon(icon="close", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64)) # false
+                # me.icon(icon="transition_fade", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # barely true
+                # me.icon(icon="star_rate_half", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # half true
+                # me.icon(icon="check", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # mostly true
+                # me.icon(icon="done_all", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # true
+              with me.box(style = me.Style(align_self='stretch')):
+                me.progress_bar(color='warn', value=10, mode='determinate') # use accent for mostlytrue and true, warn for false and pants on fire, primary for barely true and half true
+            with me.box(style=me.Style(display='flex', justify_content='center', align_content='flex-start', gap=28)):
+              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background= "linear-gradient(to right, #5271FF , #22BB7C)", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                me.link(text="Deep Analysis (Highly Recommend)", url="/deep_analysis", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
+                me.link(text="Clear Article", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+            
 
 @me.page(path="/Gemini_Misinformation_ChatBot")
 def Gemini_Misinformation_ChatBot():
