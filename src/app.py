@@ -1235,7 +1235,8 @@ The article highlights how Trump's handling of the tragedy follows a familiar pa
             "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
           }
         )
-        me.table(score_table)
+        with me.box(style = me.Style(width='100%')):
+          me.table(score_table)
         with me.box(style=me.Style(height=600, width="100%")):
           mel.chat(
             transform, 
