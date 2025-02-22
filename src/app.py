@@ -90,12 +90,16 @@ class State:
   overall_sens_fcot_score: float = 0.0
   overall_stance_fcot_score: float = 0.0
   normal_prompt_vs_fcot_prompt_log: dict[str, str] = field(default_factory=dict)
+  normal_response_dict: dict[str, str] = field(default_factory=dict)
+  fcot_response_dict: dict[str, str] = field(default_factory=dict)
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
   selected_values_1: list[str] = field(default_factory=lambda: ['Social Credibility', 'Naive Realism', 'Sensationalism', 'Stance Detection'])
+  toggle_values: list[str] = field(default_factory=lambda: [])
   response: str = ""
   input: str = ""
+  radio_value: str = "1"
 
 
   # citation for using dict: https://github.com/google/mesop/issues/814
@@ -249,13 +253,16 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
+  normal_keys = ["Naive_realism", "Social_credibility"]
   state.response = ''
-  for question in state.normal_prompting_question:
-    print(f"Question:{question}")
-    response_generator = transform(question, state.chat_history)  
+  for i in range(len(state.normal_prompting_question)):
+    # print(f"Question:{question}")
+    response_generator = transform(state.normal_prompting_question[i], state.chat_history)  
     state.response = ''.join(response_generator)
     print(f"Response:{state.response}")
     time.sleep(5)
+    state.normal_response_dict[normal_keys[i]] = state.response
+  print(state.normal_response_dict)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
   """loop through our fractal chain of thought prompted questions (3 iterations) to ask gemini to give us a score of 1 to 10 
@@ -265,19 +272,24 @@ def ask_fcot_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
-  for question in state.fcot_prompting_question:
+  # create a list to save the keys I will be using to create a dict for the fcot responses
+  fcot_keys = ["Sensationalism", "Political_stance"]
+  # create an empty list to save response
+  for i in range(len(state.fcot_prompting_question)):
     # editing the question that will be going into gemini
     user_article_title = state.article_title
-    articles_from_serp_api = serp_api(user_article_title)
-    text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
-    question = question + text_to_add
-    print("added serp_api info to fcot question")
+    # articles_from_serp_api = serp_api(user_article_title)
+    # text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
+    # question = question + text_to_add
+    # print("added serp_api info to fcot question")
     print("start asking fcot prompting questions")
-    print(f"Question:{question}")
-    response_generator = transform(question, state.chat_history)  
+    # print(f"Question:{question}")
+    response_generator = transform(state.fcot_prompting_question[i], state.chat_history)  
     response = ''.join(response_generator)
-    print(f"Response:{response}")
+    # print(f"Response:{response}")
     time.sleep(5)
+    state.fcot_response_dict[fcot_keys[i]] = response
+  print(state.fcot_response_dict)
 
 def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, event: me.ClickEvent):
   state = me.state(State)
@@ -1287,6 +1299,14 @@ def on_selection_change_1(e: me.SelectSelectionChangeEvent):
   state = me.state(State)
   state.selected_values_1 = e.values
 
+def on_toggle_change(e: me.SelectSelectionChangeEvent):
+  state = me.state(State)
+  state.toggle_values = e.values
+
+def on_change(event: me.RadioChangeEvent):
+  state = me.state(State)
+  state.radio_value = event.value
+
 @me.page(path='/adjusting', stylesheets=[
   "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
 ])
@@ -1323,24 +1343,35 @@ def adjusting():
             me.text(text = "Select your Prompting Techinique:", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
             with me.box(style=me.Style(justify_content="flex-start", align_items="left", gap=35, display="inline-flex", background = "white")):
               # should replace it with a radio button
-              me.button(label="Normal", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
-              me.button(label="COT", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
-              me.button(label="FCOT", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
+              me.radio(
+                on_change=on_change,
+                options=[
+                  me.RadioOption(label="Normal", value="Normal"),
+                  me.RadioOption(label="COT", value="COT"),
+                  me.RadioOption(label="FCOT", value="FCOT"),
+                ],
+                value=state.radio_value,
+              )
+              # me.button(label="Normal", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
+              # me.button(label="COT", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
+              # me.button(label="FCOT", type="stroked", style=me.Style(font_family="Inter", background="white", color="black"))
           # select Adjustments
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
             me.text(text = "Select your Adjustments:", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
             me.button_toggle(
-              # value=state.selected_values,
               buttons=[
                 me.ButtonToggleButton(label="Vector Database", value="Vector_Database"),
                 me.ButtonToggleButton(label="SERP API", value="SERP_API"),
                 me.ButtonToggleButton(label="Function Call", value="Function_Call"),
               ],
+              on_change=on_toggle_change,
               multiple=True,
               hide_selection_indicator=False,
               disabled=False,
+              value=state.toggle_values,
               style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="white")# blue = #5271FF
             )
+            me.text("Selected values (multiple): " + ", ".join(state.toggle_values))
           # select factuality factors
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
             me.text(text = "Select your Factuality Factors", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
@@ -1608,17 +1639,12 @@ def Gemini_Misinformation_ChatBot():
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
     # create dataframe for table view in mesop interface
-    # using the response output for everything in table for now, will switch to the best prompting technique after
-    # we find out the best combo
-    overall_naive_realism_normal_score = re.search(r'overall\s*naive\s*realism\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
-    overall_sens_normal_score = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response , re.IGNORECASE)
-    overall_stance_normal_score = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
     score_table = pd.DataFrame(
       data = {
         "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
-        "SCORE": [overall_sens_normal_score, overall_stance_normal_score, overall_naive_realism_normal_score, state.overall_social_credibility],
-        "CONSIDERATION": [state.response, state.response, state.test_response, "N/A calculated by Predictive AI"],
-        "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
+        "SCORE": [str(round(float(state.overall_sens_normal_score),2)), str(round(float(state.overall_stance_normal_score),2)), str(round(float(state.overall_naive_realism_score),2)), str(round(float(state.overall_social_credibility),2))],
+        "CONSIDERATION": [state.fcot_response_dict.get('Sensationalism'), state.fcot_response_dict.get('Political_stance'), "N/A calculated by Predictive AI", "N/A calculated by Predictive AI"],
+        "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','Liar Plus dataset, XGBoost Tree', 'Liar Plus dataset, Pytorch Neural Network']
       }
     )
 
