@@ -96,6 +96,7 @@ class State:
   serp_response: str = ""
   test_response: str = ""
   selected_values_1: list[str] = field(default_factory=lambda: ['Social Credibility', 'Naive Realism', 'Sensationalism', 'Stance Detection'])
+  toggle_values: list[str] = field(default_factory=lambda: [])
   response: str = ""
   input: str = ""
   radio_value: str = "1"
@@ -1297,6 +1298,10 @@ def on_selection_change_1(e: me.SelectSelectionChangeEvent):
   state = me.state(State)
   state.selected_values_1 = e.values
 
+def on_toggle_change(e: me.SelectSelectionChangeEvent):
+  state = me.state(State)
+  state.toggle_values = e.values
+
 def on_change(event: me.RadioChangeEvent):
   state = me.state(State)
   state.radio_value = event.value
@@ -1353,17 +1358,19 @@ def adjusting():
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
             me.text(text = "Select your Adjustments:", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
             me.button_toggle(
-              # value=state.selected_values,
               buttons=[
                 me.ButtonToggleButton(label="Vector Database", value="Vector_Database"),
                 me.ButtonToggleButton(label="SERP API", value="SERP_API"),
                 me.ButtonToggleButton(label="Function Call", value="Function_Call"),
               ],
+              on_change=on_toggle_change,
               multiple=True,
               hide_selection_indicator=False,
               disabled=False,
+              value=state.toggle_values,
               style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="white")# blue = #5271FF
             )
+            me.text("Selected values (multiple): " + ", ".join(state.toggle_values))
           # select factuality factors
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
             me.text(text = "Select your Factuality Factors", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
