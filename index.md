@@ -45,7 +45,7 @@ Built and trained different models for different factuality factors
 
 ## Results
 We will be adding more graphs/tables over the next week
-
+![Picture results](static/accuracy_table.jpg) \
 
 
 ## Discussion
