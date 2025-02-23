@@ -25,19 +25,23 @@ Our flowchart in Lucidchart showcasing the data journey thorughout this process.
 
 ## Generative AI Methods
 **Tool: Google Gemini 1.5 Pro 002**
+
 Where and how we used it:
 * Extracting key attributes from the user-uploaded text (e.g., speaker, context, title) to support predictive AI modeling.
 * Evaluating sensationalism and political stance via structured prompts.
+
 Prompting techniques and their objectives:
 * **Normal prompting**: asking a baseline question for a general response from Gemini given a factuality factor.
 * **Chain of Thought (CoT)**: asking the model to explain its response, allowing it to reason to get a more accurate response given a factuality factor.
 * **Fractal Chain of Thought (FCoT)**: asks the model to go through iterations to explain its response and reasoning and to check what it missed on its previous iterations, to get a more well-rounded and accurate response given a factuality factor.
+  
 Additional information we provide to Gemini in our prompts:
 * **Serp API**: search for related articles using Serp API, and use this information as a "ground truth" for Gemini to refine its evaluations.
 * **RAG via ChromaDB**: Extract top three related saved contents from websites such as Politifact and Snopes by HTML parsing for Gemini to gain extra information on similar topics.
 
 ## Predictive AI Methods
 **Tools: Python, HuggingFace, XGBoosted Decision Tree, Pandas, PyTorch**
+
 Built and trained different models for different factuality factors
 * **Naive Realism**: used Spacy Textblob and a HuggingFace sentiment analysis model to calculate confidence and subjectivity, and trained the model using an XGBoosted Decision Tree.
 * **Social Credibility**: Cleaned Liar Plus Dataset, one hot-encoded the speakers, context, and party affiliation, and finally built and trained a neural network model.
