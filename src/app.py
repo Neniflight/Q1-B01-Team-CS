@@ -95,7 +95,7 @@ class State:
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
-  selected_values_1: list[str] = field(default_factory=lambda: ['Social Credibility', 'Naive Realism', 'Sensationalism', 'Stance Detection'])
+  selected_values_1: list[str] = field(default_factory=lambda: [])
   toggle_values: list[str] = field(default_factory=lambda: [])
   response: str = ""
   input: str = ""
@@ -253,15 +253,20 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
-  normal_keys = ["Naive_realism", "Social_credibility"]
+  normal_keys = state.selected_values_1
+  print("normal_keys")
+  print(normal_keys)
   state.response = ''
-  for i in range(len(state.normal_prompting_question)):
+  for i in state.normal_prompting_question.keys():
     # print(f"Question:{question}")
-    response_generator = transform(state.normal_prompting_question[i], state.chat_history)  
-    state.response = ''.join(response_generator)
-    print(f"Response:{state.response}")
-    time.sleep(5)
-    state.normal_response_dict[normal_keys[i]] = state.response
+    if i in normal_keys:
+      print('start asking normal prompting question')
+      print(i)
+      response_generator = transform(state.normal_prompting_question[i], state.chat_history)  
+      state.response = ''.join(response_generator)
+      print(f"Response:{state.response}")
+      time.sleep(5)
+      state.normal_response_dict[i] = state.response
   print(state.normal_response_dict)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
@@ -273,22 +278,26 @@ def ask_fcot_prompting_questions(event: me.ClickEvent):
   """
   state = me.state(State)
   # create a list to save the keys I will be using to create a dict for the fcot responses
-  fcot_keys = ["Sensationalism", "Political_stance"]
+  fcot_keys = state.selected_values_1
+  print("fcot_keys")
+  print(fcot_keys)
   # create an empty list to save response
-  for i in range(len(state.fcot_prompting_question)):
+  for i in state.fcot_prompting_question.keys():
     # editing the question that will be going into gemini
     user_article_title = state.article_title
     # articles_from_serp_api = serp_api(user_article_title)
     # text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
     # question = question + text_to_add
     # print("added serp_api info to fcot question")
-    print("start asking fcot prompting questions")
-    # print(f"Question:{question}")
-    response_generator = transform(state.fcot_prompting_question[i], state.chat_history)  
-    response = ''.join(response_generator)
-    # print(f"Response:{response}")
-    time.sleep(5)
-    state.fcot_response_dict[fcot_keys[i]] = response
+    if i in fcot_keys:
+      print("start asking fcot prompting questions")
+      # print(f"Question:{question}")
+      print(i)
+      response_generator = transform(state.fcot_prompting_question[i], state.chat_history)  
+      response = ''.join(response_generator)
+      # print(f"Response:{response}")
+      time.sleep(5)
+      state.fcot_response_dict[i] = response
   print(state.fcot_response_dict)
 
 def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, event: me.ClickEvent):
@@ -1247,8 +1256,7 @@ The article highlights how Trump's handling of the tragedy follows a familiar pa
             "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
           }
         )
-        with me.box(style = me.Style(width='100%')):
-          me.table(score_table)
+        me.table(score_table)
         with me.box(style=me.Style(height=600, width="100%")):
           mel.chat(
             transform, 
@@ -1298,6 +1306,7 @@ def insights():
 def on_selection_change_1(e: me.SelectSelectionChangeEvent):
   state = me.state(State)
   state.selected_values_1 = e.values
+  print(state.selected_values_1)
 
 def on_toggle_change(e: me.SelectSelectionChangeEvent):
   state = me.state(State)
@@ -1371,7 +1380,6 @@ def adjusting():
               value=state.toggle_values,
               style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="white")# blue = #5271FF
             )
-            me.text("Selected values (multiple): " + ", ".join(state.toggle_values))
           # select factuality factors
           with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
             me.text(text = "Select your Factuality Factors", type = "headline-5", style = me.Style(font_weight = "bold", color ="Black", font_family = "Inter", margin=me.Margin.all(0)))
@@ -1381,7 +1389,7 @@ def adjusting():
                   me.SelectOption(label="Social Credibility", value="Social Credibility"),
                   me.SelectOption(label="Naive Realism", value="Naive Realism"),
                   me.SelectOption(label="Sensationalism", value="Sensationalism"),
-                  me.SelectOption(label="Stance Detection", value="Stance Detection")
+                  me.SelectOption(label="Stance Detection", value="Political_stance")
                 ],
                 on_selection_change=on_selection_change_1,
                 style=me.Style(width=500),
@@ -1443,7 +1451,7 @@ def uploadpdf():
                     me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
                 me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
                 with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+                  me.link(text="Submit", url="/results", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
               with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
                   me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
 
