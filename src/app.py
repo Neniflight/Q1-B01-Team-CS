@@ -80,22 +80,27 @@ class State:
   overall_stance_score: float = 0.0
   overall_social_credibility: float = 0.0
   predefined_questions: list = field(default_factory=lambda: predefined_questions)
-  normal_prompting_question: list = field(default_factory=lambda: normal_prompting_question)
-  fcot_prompting_question: list = field(default_factory=lambda: fcot_prompting_question)
+  normal_prompting_question: dict[str, str] = field(default_factory=lambda: normal_prompting_question)
+  cot_prompting_question: dict[str, str] = field(default_factory=lambda: normal_prompting_question)
+  fcot_prompting_question: dict[str, str] = field(default_factory=lambda: fcot_prompting_question)
   chat_history: list[mel.ChatMessage]
   overall_naive_realism_score: float = 0.0
   veracity: float = 0.0
   overall_sens_normal_score: float = 0.0
   overall_stance_normal_score: float = 0.0
+  overall_sens_cot_score: float = 0.0
+  overall_stance_cot_score: float = 0.0
   overall_sens_fcot_score: float = 0.0
   overall_stance_fcot_score: float = 0.0
   normal_prompt_vs_fcot_prompt_log: dict[str, str] = field(default_factory=dict)
   normal_response_dict: dict[str, str] = field(default_factory=dict)
+  cot_response_dict: dict[str, str] = field(default_factory=dict)
   fcot_response_dict: dict[str, str] = field(default_factory=dict)
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
   selected_values_1: list[str] = field(default_factory=lambda: [])
+  radio_value: str = ""
   toggle_values: list[str] = field(default_factory=lambda: [])
   response: str = ""
   input: str = ""
@@ -253,21 +258,77 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
+  # checking user selection to determeine if we are adding new info to our prompt 
+  user_article_title = state.article_title
+  input = ""
+  if "Vector_Database" in state.toggle_values:
+    # Connecting to the vector database to allow for more informed prompts
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3)
+    vdb_results = str(vdb_results['metadatas'])
+    vdb_str = f"ChromaDB Info: Based on the headline, these are the most similar statements: {vdb_results}"
+    state.vdb_response = vdb_str
+    input = input + vdb_str + "\n"
+    print("added vector database info to normal question")
+  if "SERP_API" in state.toggle_values:
+    articles_from_serp_api = str(serp_api(user_article_title))
+    print(user_article_title)
+    serp_str = f"SERP API: These are similar articles found online via an API. Please consider these articles' information in the score: {articles_from_serp_api}"
+    state.serp_response = serp_str
+    input = input + serp_str + "\n"
+    print("added serp_api info to normal question")
   normal_keys = state.selected_values_1
-  print("normal_keys")
-  print(normal_keys)
   state.response = ''
   for i in state.normal_prompting_question.keys():
     # print(f"Question:{question}")
     if i in normal_keys:
       print('start asking normal prompting question')
       print(i)
-      response_generator = transform(state.normal_prompting_question[i], state.chat_history)  
+      response_generator = transform(state.normal_prompting_question[i] + input, state.chat_history)  
       state.response = ''.join(response_generator)
       print(f"Response:{state.response}")
       time.sleep(5)
       state.normal_response_dict[i] = state.response
   print(state.normal_response_dict)
+
+def ask_cot_prompting_questions(event: me.ClickEvent):
+  """loop through our cot prompted questions to ask gemini to give us a score of 1 to 10 
+    for the sensationalism and political stance
+    
+    Args:
+        event: this question is activated when the button associated with this function is clicked 
+  """
+  state = me.state(State)
+  # checking user selection to determeine if we are adding new info to our prompt 
+  user_article_title = state.article_title
+  input = ""
+  if "Vector_Database" in state.toggle_values:
+    # Connecting to the vector database to allow for more informed prompts
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3)
+    vdb_results = str(vdb_results['metadatas'])
+    vdb_str = f"ChromaDB Info: Based on the headline, these are the most similar statements: {vdb_results}"
+    state.vdb_response = vdb_str
+    input = input + vdb_str + "\n"
+    print("added vector database info to cot question")
+  if "SERP_API" in state.toggle_values:
+    articles_from_serp_api = str(serp_api(user_article_title))
+    print(user_article_title)
+    serp_str = f"SERP API: These are similar articles found online via an API. Please consider these articles' information in the score: {articles_from_serp_api}"
+    state.serp_response = serp_str
+    input = input + serp_str + "\n"
+    print("added serp_api info to cot question")
+  cot_keys = state.selected_values_1
+  state.response = ''
+  for i in state.cot_prompting_question.keys():
+    # print(f"Question:{question}")
+    if i in cot_keys:
+      print('start asking cot prompting question')
+      print(i)
+      response_generator = transform(state.cot_prompting_question[i] + input, state.chat_history)  
+      state.response = ''.join(response_generator)
+      print(f"Response:{state.response}")
+      time.sleep(5)
+      state.cot_response_dict[i] = state.response
+  print(state.cot_response_dict)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
   """loop through our fractal chain of thought prompted questions (3 iterations) to ask gemini to give us a score of 1 to 10 
@@ -277,25 +338,31 @@ def ask_fcot_prompting_questions(event: me.ClickEvent):
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
-  # create a list to save the keys I will be using to create a dict for the fcot responses
+  # checking user selection to determeine if we are adding new info to our prompt 
+  user_article_title = state.article_title
+  input = ""
+  if "Vector_Database" in state.toggle_values:
+    # Connecting to the vector database to allow for more informed prompts
+    vdb_results = collection.query(query_texts=[user_article_title], n_results=3)
+    vdb_results = str(vdb_results['metadatas'])
+    vdb_str = f"ChromaDB Info: Based on the headline, these are the most similar statements: {vdb_results}"
+    state.vdb_response = vdb_str
+    input = input + vdb_str + "\n"
+    print("added vector database info to fcot question")
+  if "SERP_API" in state.toggle_values:
+    articles_from_serp_api = str(serp_api(user_article_title))
+    print(user_article_title)
+    serp_str = f"SERP API: These are similar articles found online via an API. Please consider these articles' information in the score: {articles_from_serp_api}"
+    state.serp_response = serp_str
+    input = input + serp_str + "\n"
+    print("added serp_api info to fcot question")
+  # looping through fcot selection to ask user selected questions in our fcot_prompts
   fcot_keys = state.selected_values_1
-  print("fcot_keys")
-  print(fcot_keys)
-  # create an empty list to save response
   for i in state.fcot_prompting_question.keys():
-    # editing the question that will be going into gemini
-    user_article_title = state.article_title
-    # articles_from_serp_api = serp_api(user_article_title)
-    # text_to_add = " Please also consider these articles' information in your analysis of the score." + str(articles_from_serp_api)
-    # question = question + text_to_add
-    # print("added serp_api info to fcot question")
     if i in fcot_keys:
       print("start asking fcot prompting questions")
-      # print(f"Question:{question}")
-      print(i)
-      response_generator = transform(state.fcot_prompting_question[i], state.chat_history)  
+      response_generator = transform(state.fcot_prompting_question[i] + input, state.chat_history)  
       response = ''.join(response_generator)
-      # print(f"Response:{response}")
       time.sleep(5)
       state.fcot_response_dict[i] = response
   print(state.fcot_response_dict)
@@ -636,7 +703,7 @@ def ask_pred_ai(event: me.ClickEvent):
     prediction = social_credit_model(input_x[0])
     prediciton_list = prediction.tolist()
     for i in range(len(prediciton_list)):
-       if prediciton_list[i] == max(prediciton_list):
+      if prediciton_list[i] == max(prediciton_list):
           state.overall_social_credibility = i*2
     print(prediction)
     # state.overall_social_credibility = prediction
@@ -1386,8 +1453,8 @@ def adjusting():
             me.select(
                 label="Select multiple",
                 options=[
-                  me.SelectOption(label="Social Credibility", value="Social Credibility"),
-                  me.SelectOption(label="Naive Realism", value="Naive Realism"),
+                  me.SelectOption(label="Social Credibility", value="Social_credibility"),
+                  me.SelectOption(label="Naive Realism", value="Naive_realism"),
                   me.SelectOption(label="Sensationalism", value="Sensationalism"),
                   me.SelectOption(label="Stance Detection", value="Political_stance")
                 ],
@@ -1402,7 +1469,10 @@ def adjusting():
               text="Selected values (multiple): " + ", ".join(state.selected_values_1), type = "subtitle-1"
             )
           # confirm button
-          me.link(text="Confirm", url="/uploadpdf", style=me.Style(align_self="stretch", text_decoration='none', font_family='Inter', color="white", font_size=35, font_weight='bold', background="#22BB7C", padding=me.Padding.symmetric(vertical=10), border_radius=10, display='flex', justify_content='center'))
+          def save_selections(event: me.ClickEvent):
+            # me.query_params['ff'] = state.selected_values_1
+            me.navigate("/Gemini_Misinformation_ChatBot")
+          me.button(label="Confirm", on_click=save_selections, style=me.Style(width="100%",  font_family='Inter', color="white", font_size=35, font_weight='bold', background="#22BB7C", padding=me.Padding.symmetric(vertical=10), border_radius=10, display='flex', justify_content='center'))
 
 
 @me.page(path='/uploadpdf', stylesheets=[
@@ -1607,6 +1677,12 @@ def Gemini_Misinformation_ChatBot():
           style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
       )
       me.button(
+          label="Ask cot Prompt Questions",
+          on_click=ask_cot_prompting_questions,
+          color="primary",
+          style = me.Style(border=me.Border.all(me.BorderSide(width=10, color="black")), align_self="center")
+      )
+      me.button(
           label="Ask fcot Prompt Questions",
           on_click=ask_fcot_prompting_questions,
           color="primary",
@@ -1647,17 +1723,69 @@ def Gemini_Misinformation_ChatBot():
         me.progress_bar(mode="determinate", value=(state.veracity)*10, color='primary')
 
     # create dataframe for table view in mesop interface
-    score_table = pd.DataFrame(
+    def get_data_for_table(prompting_selection, adjustments, factuality_factors):
+      if prompting_selection == "FCOT":
+        score_dict = {"Sensationalism": str(round(float(state.overall_sens_fcot_score),2)), "Political_stance": str(round(float(state.overall_stance_fcot_score),2)),
+                      "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+        consideration_dict = {"Sensationalism": state.fcot_response_dict.get('Sensationalism'), "Political_stance": state.fcot_response_dict.get('Political_stance'),
+                      "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+        if "SERP_API" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        else:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+      elif prompting_selection == "Normal":
+        score_dict = {"Sensationalism": str(round(float(state.overall_sens_normal_score),2)), "Political_stance": str(round(float(state.overall_stance_normal_score),2)),
+                      "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+        consideration_dict = {"Sensationalism": state.normal_response_dict.get('Sensationalism'), "Political_stance": state.normal_response_dict.get('Political_stance'),
+                      "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+        if "SERP_API" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        else:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+      else:
+        score_dict = {"Sensationalism": str(round(float(state.overall_sens_cot_score),2)), "Political_stance": str(round(float(state.overall_stance_cot_score),2)),
+                      "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+        consideration_dict = {"Sensationalism": state.cot_response_dict.get('Sensationalism'), "Political_stance": state.cot_response_dict.get('Political_stance'),
+                      "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+        if "SERP_API" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+        else:
+          citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
       data = {
-        "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
-        "SCORE": [str(round(float(state.overall_sens_normal_score),2)), str(round(float(state.overall_stance_normal_score),2)), str(round(float(state.overall_naive_realism_score),2)), str(round(float(state.overall_social_credibility),2))],
-        "CONSIDERATION": [state.fcot_response_dict.get('Sensationalism'), state.fcot_response_dict.get('Political_stance'), "N/A calculated by Predictive AI", "N/A calculated by Predictive AI"],
-        "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','Liar Plus dataset, XGBoost Tree', 'Liar Plus dataset, Pytorch Neural Network']
-      }
-    )
+        "FACTUALITY FACTOR": factuality_factors,
+        "SCORE": [score_dict[f] for f in factuality_factors],
+        "CONSIDERATION": [consideration_dict[f] for f in factuality_factors],
+        "CITATION": [citation_dict[f] for f in factuality_factors]
+        }
+      return pd.DataFrame(data)
+
+    # score_table = pd.DataFrame(
+    #   data = {
+    #     "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
+    #     "SCORE": [str(round(float(state.overall_sens_fcot_score),2)), str(round(float(state.overall_stance_fcot_score),2)), str(round(float(state.overall_naive_realism_score),2)), str(round(float(state.overall_social_credibility),2))],
+    #     "CONSIDERATION": [state.fcot_response_dict.get('Sensationalism'), state.fcot_response_dict.get('Political_stance'), "N/A calculated by Predictive AI", "N/A calculated by Predictive AI"],
+    #     "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','Liar Plus dataset, XGBoost Tree', 'Liar Plus dataset, Pytorch Neural Network']
+    #   }
+    # )
 
     with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15))):
-      me.table(score_table)
+      prompting_selection = state.radio_value
+      adjustments = state.toggle_values
+      factuality_factors = state.selected_values_1
+      print("generate table")
+      me.table(get_data_for_table(prompting_selection, adjustments, factuality_factors))
 
 # not sure why its giving me an error commenting it out for now
 # @me.page(path="/combined", title="Pred and Generative")
@@ -1744,8 +1872,16 @@ def transform(input: str, history: list[mel.ChatMessage]):
         state.overall_sens_normal_score = float(overall_sens_normal_prompt_match.group(1))
     if overall_stance_normal_prompt_match:
         state.overall_stance_normal_score = float(overall_stance_normal_prompt_match.group(1))
+    # cot prompt get score
+    overall_sens_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    overall_stance_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    if overall_sens_cot_prompt_match:
+        state.overall_sens_cot_score = float(overall_sens_normal_prompt_match.group(1))
+    if overall_stance_cot_prompt_match:
+        state.overall_stance_cot_score = float(overall_stance_normal_prompt_match.group(1))
+    print('checking for bug')
+    print(state.overall_sens_cot_score, state.overall_stance_cot_score)
     # fcot prompt get score
-    
     overall_sens_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
     overall_stance_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
     if overall_sens_fcot_prompt_match:
@@ -1758,6 +1894,8 @@ def transform(input: str, history: list[mel.ChatMessage]):
                                                          "political_stance: " + str(round(float(state.overall_stance_normal_score),2))]
     state.normal_prompt_vs_fcot_prompt_log['fcot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_fcot_score),2)),
                                                              "political_stance: " + str(round(float(state.overall_stance_fcot_score), 2))]
+    state.normal_prompt_vs_fcot_prompt_log['cot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_cot_score),2)),
+                                                             "political_stance: " + str(round(float(state.overall_stance_cot_score), 2))]
     print("####### prompt log ########")
     print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
