@@ -300,6 +300,14 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
       print(f"Response:{state.response}")
       time.sleep(5)
       state.normal_response_dict[i] = state.response
+      overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      if overall_sens_match:
+        print('found_sens')
+        state.overall_sens_score = float(overall_sens_match.group(1))
+      if overall_stance_match:
+        print('found_stance')
+        state.overall_stance_score = float(overall_stance_match.group(1))
   print(state.normal_response_dict)
 
 def ask_cot_prompting_questions(event: me.ClickEvent):
@@ -340,6 +348,14 @@ def ask_cot_prompting_questions(event: me.ClickEvent):
       print(f"Response:{state.response}")
       time.sleep(5)
       state.cot_response_dict[i] = state.response
+      overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      if overall_sens_match:
+        print('found_sens')
+        state.overall_sens_score = float(overall_sens_match.group(1))
+      if overall_stance_match:
+        print('found_stance')
+        state.overall_stance_score = float(overall_stance_match.group(1))
   print(state.cot_response_dict)
 
 def ask_fcot_prompting_questions(event: me.ClickEvent):
@@ -374,9 +390,18 @@ def ask_fcot_prompting_questions(event: me.ClickEvent):
     if i in fcot_keys:
       print("start asking fcot prompting questions")
       response_generator = transform(state.fcot_prompting_question[i] + input, state.chat_history)  
-      response = ''.join(response_generator)
+      state.response = ''.join(response_generator)
+      print(f"Response:{state.response}")
       time.sleep(5)
-      state.fcot_response_dict[i] = response
+      state.fcot_response_dict[i] = state.response 
+      overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', state.response, re.IGNORECASE)
+      if overall_sens_match:
+        print('found_sens')
+        state.overall_sens_score = float(overall_sens_match.group(1))
+      if overall_stance_match:
+        print('found_stance')
+        state.overall_stance_score = float(overall_stance_match.group(1))
   print(state.fcot_response_dict)
 
 def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, event: me.ClickEvent):
@@ -1249,7 +1274,7 @@ def about_us():
         me.text(text="Below, you can read through the research paper. Feel free to download it as well!", 
                 type="body-1", style = me.Style(font_family="Inter"))
         me.embed(
-          src="https://olive-edie-30.tiiny.site/", # this isn't working now cuz we need google drive access to see the doc :(, could try using google cloud console?
+          src="https://olive-edie-30.tiiny.site/",
           style=me.Style(width="100%", height=800)
         )
         
@@ -1281,7 +1306,7 @@ def deep_analysis_page():
     with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
       with me.box(style=me.Style(width="100%", padding=me.Padding(top=50, right=100, left=100, bottom=50), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=40, display="inline-flex")):
         # if you want to do score with special text colors, make this into a me.box with two different texts 
-        me.text("Score: " + "{insert score here}", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
+        me.text("Score: " + f"{state.veracity}, {state.veracity_label}", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
         with me.box(style=me.Style(width="100%", justify_content='flex-start', align_items='flex-start', gap=30, display='flex', flex_wrap='wrap')):
           # article title
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
@@ -1497,7 +1522,7 @@ def adjusting():
             )
           # confirm button
           def save_selections(event: me.ClickEvent):
-            if (state.radio_value == '') or (len(state.toggle_values) == 0) or (len(state.selected_values_1) == 0):
+            if (state.radio_value == '') or (len(state.selected_values_1) == 0):
               print('please complete selection')
             else:
               me.navigate("/uploadpdf")
@@ -1513,7 +1538,7 @@ def process_submission(event: me.ClickEvent):
     state.uploaded = True
     get_metadata(state.chat_history)
   if state.radio_value == "Normal":
-    ask_normal_prompting_questions()
+    ask_normal_prompting_questions(me.ClickEvent(key="normal_prompt", is_target=True))
   elif state.radio_value == "COT":
     ask_cot_prompting_questions()
   else: 
@@ -1603,7 +1628,6 @@ def navigate_to_deep(e: me.ClickEvent):
 def reset_article(e: me.ClickEvent):
   state = me.state(State)
   state.article_title = ""
-  state.chat_history = ""
   state.chat_history = []
   state.veracity = 0.0
   state.veracity_label = ""
@@ -1829,24 +1853,9 @@ def transform(input: str, history: list[mel.ChatMessage]):
     state = me.state(State)
     chat_history = ""
     if state.file and state.uploaded:
-       chat_history += f"\nuser: {pdf_to_text(state.file)}"
+      chat_history += f"\nuser: {pdf_to_text(state.file)}"
     # Creating the chat_history
     chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-    # implementation with chromaDB goes here
-    # results = collection.query(query_texts=[state.article_title],
-    #                                  n_results=3,
-    #                                  where=
-    #                                  {
-    #                                     "label": "true"
-    #                                  })
-    # chromadb_info = "\n".join(results['documents'][0])
-
-
-    # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
-    # time.sleep(4)
-
-    # full_input = f"{chat_history}\nChromaDB Info: Based on the headline, these are the most similar true statements: {chromadb_info}\nuser: {input}"
-    # Combining input and chat_history
     full_input = f"{chat_history}\nuser: {input}"
     time.sleep(4)
     response = model.generate_content(full_input, stream=True)
@@ -1856,8 +1865,10 @@ def transform(input: str, history: list[mel.ChatMessage]):
         overall_sens_match = re.search(r'overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
         overall_stance_match = re.search(r'overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
         if overall_sens_match:
+            print('found_sens')
             state.overall_sens_score = float(overall_sens_match.group(1))
         if overall_stance_match:
+            print('found_stance')
             state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
     # normal prompt get score
