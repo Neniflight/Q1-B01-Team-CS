@@ -475,7 +475,7 @@ def ask_pred_ai():
     prediction = loaded_model.predict(df.loc[0:0])[0]
     ### LINE ABOVE IS GIVING ERROR COMMENTING OUT TO WORK ON SCORE TABLE ###
     # prediction = 5
-    prediction_to_score = {5: 10, 4: 0, 0: 4, 1: 2, 2: 6, 3: 8}
+    prediction_to_score = {5: 6, 4: 1, 0: 3, 1: 2, 2: 4, 3: 5}
     state.overall_naive_realism_score = prediction_to_score[prediction]
   
   if "Social_credibility" in state.selected_values_1:
@@ -661,6 +661,10 @@ def ask_pred_ai():
     # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
   # get info needed to input into model
+    speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
+    speaker = ''.join(speaker_generator)
+    speaker = ('-'.join(speaker.split())).lower()
+    speaker = speaker.replace("\n", "").replace(" ", "")
     speaker_response = speaker
     context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + str(unique_contexts), state.chat_history)
     context_response = ''.join(context_generator)
@@ -745,21 +749,31 @@ def ask_pred_ai():
       context_score = modified_label['mod_label'].mean()
       party_affli_score = modified_label['mod_label'].mean()
       state.overall_social_credibility = (speaker_score + context_score + party_affli_score) / 3
+    state.overall_social_credibility = state.overall_social_credibility * 6 / 10
     print(f"This is overall_social_credibility: {state.overall_social_credibility}")
     state.overall_social_credibility = round(state.overall_social_credibility, 2)
   
   print(state.overall_social_credibility)
-  state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
+
+  all_scores = [state.overall_naive_realism_score, 6 - state.overall_sens_score, 6 - state.overall_stance_score, state.overall_social_credibility]
+  exist_score_sum = []
+  for scores in all_scores:
+    if scores:
+      exist_score_sum.append(scores)
+  state.veracity = np.round(np.mean(exist_score_sum), 2)
+  
+
+  # state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
   # the label is assigned here but i have issues 
-  if state.veracity >= 1 and state.veracity < 2:
+  if state.veracity >= 0 and state.veracity < 1:
     label = "Pants on Fire"
-  elif state.veracity >= 2 and state.veracity < 3:
+  elif state.veracity >= 1 and state.veracity < 2:
     label = "False"
-  elif state.veracity >= 3 and state.veracity < 4:
+  elif state.veracity >= 2 and state.veracity < 3:
     label = "Barely True"
-  elif state.veracity >= 4 and state.veracity < 5:
+  elif state.veracity >= 3 and state.veracity < 4:
     label = "Half True"
-  elif state.veracity >= 5 and state.veracity < 6:
+  elif state.veracity >= 4 and state.veracity < 5:
     label = "Mostly True"
   else: 
     label = "True"
@@ -1358,15 +1372,70 @@ def deep_analysis_page():
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
             me.markdown(f"{state.article_summary}", style=me.Style(font_family="Inter", font_size=16, color="#010021", margin=me.Margin.symmetric(vertical=0)))
         me.text("Score Table", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
-        score_table = pd.DataFrame(
-        data = {
-            "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
-            "SCORE": [5, 3, 2, 1],
-            "CONSIDERATION": ["Sensationalism Consideration", "Political Stance Consideration", "Naive Realism Consideration", "Social Credibility Conderation"],
-            "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','gemini-1.5-pro-002', 'Liar Plus dataset, Pytorch Neural Network']
-          }
-        )
-        me.table(score_table)
+        def get_data_for_table(prompting_selection, adjustments, factuality_factors):
+          if prompting_selection == "FCOT":
+            score_dict = {"Sensationalism": str(round(float(state.overall_sens_score),2)), "Political_stance": str(round(float(state.overall_stance_score),2)),
+                          "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+            consideration_dict = {"Sensationalism": state.fcot_response_dict.get('Sensationalism'), "Political_stance": state.fcot_response_dict.get('Political_stance'),
+                          "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+            if "SERP_API" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            else:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+          elif prompting_selection == "Normal":
+            score_dict = {"Sensationalism": str(round(float(state.overall_sens_score),2)), "Political_stance": str(round(float(state.overall_stance_score),2)),
+                          "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+            consideration_dict = {"Sensationalism": state.normal_response_dict.get('Sensationalism'), "Political_stance": state.normal_response_dict.get('Political_stance'),
+                          "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+            if "SERP_API" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            else:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+          else:
+            score_dict = {"Sensationalism": str(round(float(state.overall_sens_score),2)), "Political_stance": str(round(float(state.overall_stance_score),2)),
+                          "Naive_realism": str(round(float(state.overall_naive_realism_score),2)), "Social_credibility": str(round(float(state.overall_social_credibility),2))}
+            consideration_dict = {"Sensationalism": state.cot_response_dict.get('Sensationalism'), "Political_stance": state.cot_response_dict.get('Political_stance'),
+                          "Naive_realism": "N/A calculated by Predictive AI", "Social_credibility": "N/A calculated by Predictive AI"}
+            if "SERP_API" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result", "Political_stance": "gemini-1.5-pro-002, Serp API search result","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            elif "SERP_API" in adjustments and "Vector_Database" in adjustments:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes", "Political_stance": "gemini-1.5-pro-002, Serp API search result, Politifact, Snopes","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+            else:
+              citation_dict = {"Sensationalism": "gemini-1.5-pro-002", "Political_stance": "gemini-1.5-pro-002","Naive_realism": 'Liar Plus dataset, XGBoost Tree', "Social_credibility": 'Liar Plus dataset, Pytorch Neural Network'}
+          data = {
+            "FACTUALITY FACTOR": factuality_factors,
+            "SCORE": [score_dict[f] for f in factuality_factors],
+            "CONSIDERATION": [consideration_dict[f] for f in factuality_factors],
+            "CITATION": [citation_dict[f] for f in factuality_factors]
+            }
+          return pd.DataFrame(data)
+
+        # score_table = pd.DataFrame(
+        #   data = {
+        #     "FACTUALITY FACTOR": ["Sensationalism", "Political Stance", "Naive Realism", "Social Credibility"],
+        #     "SCORE": [str(round(float(state.overall_sens_fcot_score),2)), str(round(float(state.overall_stance_fcot_score),2)), str(round(float(state.overall_naive_realism_score),2)), str(round(float(state.overall_social_credibility),2))],
+        #     "CONSIDERATION": [state.fcot_response_dict.get('Sensationalism'), state.fcot_response_dict.get('Political_stance'), "N/A calculated by Predictive AI", "N/A calculated by Predictive AI"],
+        #     "CITATION": ["gemini-1.5-pro-002",'gemini-1.5-pro-002','Liar Plus dataset, XGBoost Tree', 'Liar Plus dataset, Pytorch Neural Network']
+        #   }
+        # )
+
+        with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15))):
+          prompting_selection = state.radio_value
+          adjustments = state.toggle_values
+          factuality_factors = state.selected_values_1
+          print("generate table")
+          me.table(get_data_for_table(prompting_selection, adjustments, factuality_factors))
+
         with me.box(style=me.Style(height=600, width="100%")):
           mel.chat(
             transform, 
@@ -1540,9 +1609,9 @@ def process_submission(event: me.ClickEvent):
   if state.radio_value == "Normal":
     ask_normal_prompting_questions(me.ClickEvent(key="normal_prompt", is_target=True))
   elif state.radio_value == "COT":
-    ask_cot_prompting_questions()
+    ask_cot_prompting_questions(me.ClickEvent(key="cot_prompt", is_target=True))
   else: 
-    ask_fcot_prompting_questions
+    ask_fcot_prompting_questions(me.ClickEvent(key="fcot_prompt", is_target=True))
   ask_pred_ai()
   state.finish_analysis = True
 
@@ -1597,7 +1666,7 @@ def uploadpdf():
                 me.input(label="Link input", appearance="outline", on_blur=link_inputted, style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
                 me.button(label="Submit", on_click=process_submission, type='flat', style=me.Style(font_family="Inter", color="white", font_size=20, font_weight='bold', background="#5271FF", border_radius=5, padding=me.Padding.symmetric(vertical=5, horizontal=10), height=50))
               with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
+                me.button(label="Make Adjustments", on_click = navigate_to_adjustment, type='flat', style=me.Style(font_family="Inter", color="#5271FF", font_size=20, font_weight='bold', background="white", border_radius=5, padding=me.Padding.symmetric(vertical=5, horizontal=10), height=40))
           if s.finish_analysis == True: 
             with me.box(style = me.Style(flex_direction='column', justify_content='flex-start', align_items='center', gap=50, display='flex')):
               with me.box(style=me.Style(display='flex', justify_content='center', align_items='flex-start', gap=65)):
@@ -1621,6 +1690,9 @@ def uploadpdf():
             with me.box(style=me.Style(display='flex', justify_content='center', align_content='flex-start', gap=28)):
               me.button(label="Deep Analysis (Highly Recommend)", on_click=navigate_to_deep, type="flat", style=me.Style(height=50, background="linear-gradient(to right, #5271FF , #22BB7C)", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5, font_family="Inter", color="white", font_size=20, font_weight="bold"))
               me.button(label="Clear Article", type="flat", on_click=reset_article, style=me.Style(height=50, background="#5271FF", border_radius=5, padding=me.Padding.symmetric(vertical=5, horizontal=10), font_family="Inter", color="white", font_size=20, font_weight="bold"))
+
+def navigate_to_adjustment(e: me.ClickEvent):
+  me.navigate("/adjustment")
 
 def navigate_to_deep(e: me.ClickEvent):
   me.navigate("/deep_analysis")
