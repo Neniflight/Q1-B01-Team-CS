@@ -31,6 +31,14 @@ from normal_prompting import normal_prompting_question
 from fcot_prompting import fcot_prompting_question
 from naive_realism import naive_realism_normal, naive_realism_cot, naive_realism_fcot
 
+from serpapi import GoogleSearch
+from dotenv import load_dotenv
+import os
+from newspaper import Article
+from newspaper import ArticleException
+from datetime import datetime, timedelta
+import pdfkit
+
 # from the env file, get your API_KEY
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
@@ -86,16 +94,19 @@ class State:
   chat_history: list[mel.ChatMessage]
   overall_naive_realism_score: float = 0.0
   veracity: float = 0.0
-  overall_sens_normal_score: float = 0.0
-  overall_stance_normal_score: float = 0.0
-  overall_sens_cot_score: float = 0.0
-  overall_stance_cot_score: float = 0.0
-  overall_sens_fcot_score: float = 0.0
-  overall_stance_fcot_score: float = 0.0
+  veracity_label: str = ""
+  # overall_sens_normal_score: float = 0.0
+  # overall_stance_normal_score: float = 0.0
+  # overall_sens_cot_score: float = 0.0
+  # overall_stance_cot_score: float = 0.0
+  # overall_sens_fcot_score: float = 0.0
+  # overall_stance_fcot_score: float = 0.0
   normal_prompt_vs_fcot_prompt_log: dict[str, str] = field(default_factory=dict)
   normal_response_dict: dict[str, str] = field(default_factory=dict)
   cot_response_dict: dict[str, str] = field(default_factory=dict)
   fcot_response_dict: dict[str, str] = field(default_factory=dict)
+  link: str = ""
+  finish_analysis: bool = False
   vdb_response: str = ""
   serp_response: str = ""
   test_response: str = ""
@@ -103,26 +114,23 @@ class State:
   radio_value: str = ""
   toggle_values: list[str] = field(default_factory=lambda: [])
   response: str = ""
-  input: str = ""
-  radio_value: str = "1"
+  article_author: str = ""
+  article_date: str = ""
+  article_source: str = ""
+  article_topic: str = ""
+  article_summary: str = ""
 
 
   # citation for using dict: https://github.com/google/mesop/issues/814
-
-# def page_load(e: me.LoadEvent):
-#   state = me.state(State)
-#   state.test_response = ""
-#   state.vdb_response = ""
-#   state.serp_response = ""
 
 # Function used to handle when a user uploads a pdf file
 def handle_upload(event: me.UploadEvent):
   state = me.state(State)
   state.file = event.file
   state.uploaded = True
-  print('before get_headline')
-  get_headline(state.chat_history)
-  print('after get_headline')
+  print('before get_metadata')
+  get_metadata(state.chat_history)
+  print('after get_metadata')
 
 def pdf_to_text(user_pdf):
   """converts the pdf the user uploads via the upload pdf button to string page by page
@@ -140,12 +148,16 @@ def pdf_to_text(user_pdf):
 # citation: https://pypdf2.readthedocs.io/en/3.x/user/extract-text.html
 # citation: https://www.geeksforgeeks.org/convert-pdf-to-txt-file-using-python/
 
-from serpapi import GoogleSearch
-from dotenv import load_dotenv
-import os
-from newspaper import Article
-from newspaper import ArticleException
-from datetime import datetime, timedelta
+def convert_url_to_pdf(url, pdf_path):
+  path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" # install using https://wkhtmltopdf.org/ and input proper path
+  config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+  try:
+    pdfkit.from_url(url, pdf_path, configuration=config)
+    print(f"PDF generated and saved at {pdf_path}")
+  except Exception as e:
+    print(f"PDF generation failed: {e}")
+  # convert_url_to_pdf("https://www.cnn.com/2025/02/25/politics/trump-court-losses-immigration-spending-freeze/index.html", r"C:\temp\example.pdf")
+
 # serp_api_function
 def serp_api(user_article_title):
   serp_api_key = os.getenv("SERP_API_KEY")
@@ -276,11 +288,11 @@ def ask_normal_prompting_questions(event: me.ClickEvent):
     state.serp_response = serp_str
     input = input + serp_str + "\n"
     print("added serp_api info to normal question")
-  normal_keys = state.selected_values_1
+  selected_normal_keys = state.selected_values_1
   state.response = ''
   for i in state.normal_prompting_question.keys():
     # print(f"Question:{question}")
-    if i in normal_keys:
+    if i in selected_normal_keys:
       print('start asking normal prompting question')
       print(i)
       response_generator = transform(state.normal_prompting_question[i] + input, state.chat_history)  
@@ -398,325 +410,336 @@ def ask_prompting_questions_v2(vb: bool, serp: bool, fc: bool, prompt: str, even
   time.sleep(5)
 
     
-def ask_pred_ai(event: me.ClickEvent):
+def ask_pred_ai():
   """Runs two Predictive AI models (sentiment_analyzer & social_credit_model) and returns a score for each factuality factors
     
     Args:
         event: this question is activated when the button associated with this function is clicked 
   """
   state = me.state(State)
-  loaded_model = pickle.load(open("../model/XGModel.sav", 'rb'))
-  response = state.article_title
-  print(response)
+  if "Naive_realism" in state.selected_values_1:
+    loaded_model = pickle.load(open("../model/XGModel.sav", 'rb'))
+    response = state.article_title
+    print(response)
 
-  subject_score = TextBlob(response).sentiment.subjectivity
-  sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', truncation=True)
-  confidence = sentiment_analyzer(response)[0]['score']
+    subject_score = TextBlob(response).sentiment.subjectivity
+    sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', truncation=True)
+    confidence = sentiment_analyzer(response)[0]['score']
 
-  with open('../data/speaker_reput_dict.pkl', 'rb') as file:
-    speaker_reput_dict = pickle.load(file)
-  
-  speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
-  speaker = ''.join(speaker_generator)
-  speaker = ('-'.join(speaker.split())).lower()
-  speaker = speaker.replace("\n", "").replace(" ", "")
-  #check if speaker has new line characters
-  speaker_reput = speaker_reput_dict.get(speaker)
-  print(speaker)
-
-  df = pd.DataFrame({
-     'barely_true_ratio': None if speaker_reput is None else speaker_reput[0],
-     'false_ratio': None if speaker_reput is None else speaker_reput[1],
-     'half_true_ratio': None if speaker_reput is None else speaker_reput[2],
-     'mostly_true_ratio': None if speaker_reput is None else speaker_reput[3],
-     'pants_on_fire_ratio': None if speaker_reput is None else speaker_reput[4],
-     'confidence': confidence,
-     'subjectivity': subject_score,
-    }, index=[0])
-  # {'barely-true': 0, 'false': 1, 'half-true': 2, 'mostly-true': 3, 'pants-fire': 4, 'true': 5}
-  # prediction = loaded_model.predict(df.loc[0:0])[0]
-  ### LINE ABOVE IS GIVING ERROR COMMENTING OUT TO WORK ON SCORE TABLE ###
-  prediction = 5
-  prediction_to_score = {5: 10, 4: 0, 0: 4, 1: 2, 2: 6, 3: 8}
-  state.overall_naive_realism_score = prediction_to_score[prediction]
-  
-  # load model
-  social_credit_model = speaker_context_party_nn()
-  state_dict = torch.load("../model/speaker_context_party_model_state.pth")
-  social_credit_model.load_state_dict(state_dict)
-  print("hello loaded model!")
-  # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
-
-
-  # Please ignore, this is for chekcing purposes and also for not using up API resource when I need to check features.
-  # speaker_response = "scott-surovell"  
-  # context_response = "a floor speech"
-  # party_affli_response = "democrat"
-
-  train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
-  train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
-                     'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
-                    'pants on fire counts', 'context', 'extracted justification']
-  train_data = train_data[["label", "speaker", "context", "party affiliation"]]
-  train_data = train_data.dropna()
-
-  # extra step of cleaning for avg score based on labels
-  modified_label = train_data.copy()
-  modified_label['mod_label'] = modified_label['label'].replace({'pants-fire': 0, np.nan : 0, 'barely-true':2, 'false':4, 'half-true':6, 'mostly-true':8, 'true':10})
-  modified_label.head()
-
-  # clean up context
-  # write function to clean context
-  import nltk
-  from nltk.corpus import stopwords
-  nltk.download('stopwords')
-  unique_characters = '!@#$%^&*()_+~{}|:"<>?,./;'
-
-  # light cleaning (fixing syntax)
-  def clean_context(context):
-    """cleaned the context column of the liar plus dataset by deleting stopwords
+    with open('../data/speaker_reput_dict.pkl', 'rb') as file:
+      speaker_reput_dict = pickle.load(file)
     
-    Args:
-        context: each datapoint in the context column from the liar plus dataset 
-    """
-    context = context.split(" ")
-    cleaned_context = []
-    for w in context:
-      cleaned_word = ""
-      if w not in stopwords.words('english'):
-        for char in w:
-          if char not in unique_characters:
-            cleaned_word += char
-        cleaned_context.append(cleaned_word)
-    return str.lower(" ".join(cleaned_context))
+    speaker_generator = transform("Who is the speaker in this article? Only give the speaker name", state.chat_history)
+    speaker = ''.join(speaker_generator)
+    speaker = ('-'.join(speaker.split())).lower()
+    speaker = speaker.replace("\n", "").replace(" ", "")
+    #check if speaker has new line characters
+    speaker_reput = speaker_reput_dict.get(speaker)
+    print(speaker)
 
-  # deep cleaning (fixing to reduce category)
-  def clean_context_by_cat (context):
-    """going through the context column of the liar plus dataset and categorizing them into
-       more generalized categories based on what text was included in the original datapoint
-       after deleting stop words 
-    
-    Args:
-        context: each datapoint in the context column from the liar plus dataset 
-    """
-    context = context.split(" ")
-    for w in context:
-      if w == "press":
-        output = "press"
-        break
-      elif w == "news" or w == "abc's" or w == "msnbc's" or w =="nbc's" or w == "journal-constitution" or w == "reporters" or w == "providence" or w == "amanpour":
-        output = "news"
-        break
-      elif w == "newspaper" or w == "study" or w == "chart":
-        output = "facts_approved_text"
-        break
-      elif w == "speech" or w =="speeches":
-        output = "speech"
-        break
-      elif w == "interview" or w == "interviews" or w == "appearance":
-        output = "interview"
-        break
-      elif w == "ad" or w == "advertisement" or w =="commercial" or w == "flier" or w == "fliers":
-        output = "ads"
-        break
-      elif w == "debate":
-        output = "debate"
-        break
-      elif w == "conference":
-        output = "conference"
-        break
-      elif w == "campaign" or w == "candidate" or w == "rally" or w =="bill-signing" or w == "cnn's":
-        output = "campaign"
-        break
-      elif w == "statement" or w == "statements":
-        output = "statement"
-        break
-      elif w == "web" or w == "website" or w =="websites" or w == "internet" or w == "internets" or w == "blogs":
-        output = "web"
-        break
-      elif w == "meeting" or w == "meetings":
-        output = "meeting"
-        break
-      elif w == "email" or w == "e-mail" or w == "mailer" or w == "letter" or w =="letters" or w == "mailing":
-        output = "mail"
-        break
-      elif w == "petition":
-        output = "petition"
-        break
-      elif w == "comments" or w == "comment":
-        output = "comments"
-        break
-      elif w == "op-ed" or w == "opinion" or w == "column" or w == "editor" or w == "editorial" or w == "commentary" or w == "forum" or w == "panel" or w == "discussion" or w == "radio" or w == "town" or w == "questionnaire" or w =="o'reilly" or w == "survey":
-        output = "opinion piece"
-        break
-      elif w == "address" or w == "union":
-        output = "address"
-        break
-      elif w == "social_media" or w == "tweet" or w == "tweets" or w == "facebook" or w == "blog" or w == "posts" or w == "posting" or w == "post" or w == "twitter":
-        output = "social media"
-        break
-      elif w == "broadcast":
-        output = "broadcast"
-        break
-      elif w == "video":
-        output = "video"
-        break
-      elif w == "article" or w =="newsletter":
-        output = "article"
-        break
-      elif w == "report" or w =="presenation":
-        output = "presentation"
-        break
-      elif w == "hearing":
-        output = "hearing"
-        break
-      elif w == "remarks":
-        output = "remarks"
-        break
-      elif w == "book" or w == "books" or w == "movie" or w == "billboard" or w == "show" or w == "episode" or w == "comics":
-        output = "entertainment"
-        break
-      elif w =="meme" or w == "rounds" or w == "forwarded":
-        output = "meme"
-        break
-      elif w == "oxford":
-        output = "oxford"
-        break
-      elif w == "fla" or w == "boca":
-        output = "florida"
-        break
-      elif w == "minn":
-        output = "minnesota"
-        break
-      elif w == "iowa":
-        output = "iowa"
-        break
-      elif w == "mo" or w == "louis":
-        output = "missouri"
-        break
-      elif w == "mich":
-        output = "michigan"
-        break
-      elif w == "pa":
-        output = "Pennsylvania"
-        break
-      elif w == "vegas" or w =="nev":
-        output = "nevada"
-        break
-      elif w =="tenn":
-        output = "Tennessee"
-        break
-      elif w == "nh":
-        output = "New Hampshire"
-        break
-      elif w == "colo":
-        output = "colorado"
-        break
-      else:
-        output = ""
-    return output
+    df = pd.DataFrame({
+      'barely_true_ratio': 0 if speaker_reput is None else speaker_reput[0],
+      'false_ratio': 0 if speaker_reput is None else speaker_reput[1],
+      'half_true_ratio': 0 if speaker_reput is None else speaker_reput[2],
+      'mostly_true_ratio': 0 if speaker_reput is None else speaker_reput[3],
+      'pants_on_fire_ratio': 0 if speaker_reput is None else speaker_reput[4],
+      'confidence': confidence,
+      'subjectivity': subject_score,
+      }, index=[0])
+    # {'barely-true': 0, 'false': 1, 'half-true': 2, 'mostly-true': 3, 'pants-fire': 4, 'true': 5}
+    prediction = loaded_model.predict(df.loc[0:0])[0]
+    ### LINE ABOVE IS GIVING ERROR COMMENTING OUT TO WORK ON SCORE TABLE ###
+    # prediction = 5
+    prediction_to_score = {5: 10, 4: 0, 0: 4, 1: 2, 2: 6, 3: 8}
+    state.overall_naive_realism_score = prediction_to_score[prediction]
+  
+  if "Social_credibility" in state.selected_values_1:
+    # load model
+    social_credit_model = speaker_context_party_nn()
+    state_dict = torch.load("../model/speaker_context_party_model_state.pth")
+    social_credit_model.load_state_dict(state_dict)
+    print("hello loaded model!")
+    # citation: https://discuss.pytorch.org/t/error-loading-saved-model/8371/6
 
-  # apply function back to df['context']
-  modified_label['context'] = modified_label['context'].apply(clean_context)
-  modified_label['context'] = modified_label['context'].apply(clean_context_by_cat)
+    train_data = pd.read_csv('https://raw.githubusercontent.com/Tariq60/LIAR-PLUS/refs/heads/master/dataset/tsv/train2.tsv', sep = "\t")
+    train_data.columns =['index','ID of statement', 'label', 'statement', 'subject', 'speaker', "speaker's job title", 'state info',
+                      'party affiliation', 'barely true counts', 'false counts', 'half true counts', 'mostly true counts',
+                      'pants on fire counts', 'context', 'extracted justification']
+    train_data = train_data[["label", "speaker", "context", "party affiliation"]]
+    train_data = train_data.dropna()
 
-  # drop the empty outputs, weird/unique context
-  modified_label = modified_label[modified_label['context'] != ""]
+    # extra step of cleaning for avg score based on labels
+    modified_label = train_data.copy()
+    modified_label['mod_label'] = modified_label['label'].replace({'pants-fire': 0, np.nan : 0, 'barely-true':2, 'false':4, 'half-true':6, 'mostly-true':8, 'true':10})
+    modified_label.head()
 
-  unique_contexts = list(modified_label.context.unique())
-  unique_party = list(modified_label['party affiliation'].unique())
-  # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
+    # clean up context
+    # write function to clean context
+    import nltk
+    from nltk.corpus import stopwords
+    nltk.download('stopwords')
+    unique_characters = '!@#$%^&*()_+~{}|:"<>?,./;'
 
-# get info needed to input into model
-  speaker_response = speaker
-  context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + str(unique_contexts), state.chat_history)
-  context_response = ''.join(context_generator)
-  context_response = context_response.replace("\n", "")
-  print("context: " + context_response)
-  time.sleep(5)
-  party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + str(unique_party), state.chat_history)
-  party_affli_response = ''.join(party_affli_generator)
-  party_affli_response = party_affli_response.replace('\n', '')
-  print("party_affli: " + party_affli_response)
-  time.sleep(5)
+    # light cleaning (fixing syntax)
+    def clean_context(context):
+      """cleaned the context column of the liar plus dataset by deleting stopwords
+      
+      Args:
+          context: each datapoint in the context column from the liar plus dataset 
+      """
+      context = context.split(" ")
+      cleaned_context = []
+      for w in context:
+        cleaned_word = ""
+        if w not in stopwords.words('english'):
+          for char in w:
+            if char not in unique_characters:
+              cleaned_word += char
+          cleaned_context.append(cleaned_word)
+      return str.lower(" ".join(cleaned_context))
 
-  # Please ignore, this is for testing purposes.
-#   speaker_response = "scott-surovell"  
-#   context_response = "speech"
-#   party_affli_response = "democrat"
+    # deep cleaning (fixing to reduce category)
+    def clean_context_by_cat (context):
+      """going through the context column of the liar plus dataset and categorizing them into
+        more generalized categories based on what text was included in the original datapoint
+        after deleting stop words 
+      
+      Args:
+          context: each datapoint in the context column from the liar plus dataset 
+      """
+      context = context.split(" ")
+      for w in context:
+        if w == "press":
+          output = "press"
+          break
+        elif w == "news" or w == "abc's" or w == "msnbc's" or w =="nbc's" or w == "journal-constitution" or w == "reporters" or w == "providence" or w == "amanpour":
+          output = "news"
+          break
+        elif w == "newspaper" or w == "study" or w == "chart":
+          output = "facts_approved_text"
+          break
+        elif w == "speech" or w =="speeches":
+          output = "speech"
+          break
+        elif w == "interview" or w == "interviews" or w == "appearance":
+          output = "interview"
+          break
+        elif w == "ad" or w == "advertisement" or w =="commercial" or w == "flier" or w == "fliers":
+          output = "ads"
+          break
+        elif w == "debate":
+          output = "debate"
+          break
+        elif w == "conference":
+          output = "conference"
+          break
+        elif w == "campaign" or w == "candidate" or w == "rally" or w =="bill-signing" or w == "cnn's":
+          output = "campaign"
+          break
+        elif w == "statement" or w == "statements":
+          output = "statement"
+          break
+        elif w == "web" or w == "website" or w =="websites" or w == "internet" or w == "internets" or w == "blogs":
+          output = "web"
+          break
+        elif w == "meeting" or w == "meetings":
+          output = "meeting"
+          break
+        elif w == "email" or w == "e-mail" or w == "mailer" or w == "letter" or w =="letters" or w == "mailing":
+          output = "mail"
+          break
+        elif w == "petition":
+          output = "petition"
+          break
+        elif w == "comments" or w == "comment":
+          output = "comments"
+          break
+        elif w == "op-ed" or w == "opinion" or w == "column" or w == "editor" or w == "editorial" or w == "commentary" or w == "forum" or w == "panel" or w == "discussion" or w == "radio" or w == "town" or w == "questionnaire" or w =="o'reilly" or w == "survey":
+          output = "opinion piece"
+          break
+        elif w == "address" or w == "union":
+          output = "address"
+          break
+        elif w == "social_media" or w == "tweet" or w == "tweets" or w == "facebook" or w == "blog" or w == "posts" or w == "posting" or w == "post" or w == "twitter":
+          output = "social media"
+          break
+        elif w == "broadcast":
+          output = "broadcast"
+          break
+        elif w == "video":
+          output = "video"
+          break
+        elif w == "article" or w =="newsletter":
+          output = "article"
+          break
+        elif w == "report" or w =="presenation":
+          output = "presentation"
+          break
+        elif w == "hearing":
+          output = "hearing"
+          break
+        elif w == "remarks":
+          output = "remarks"
+          break
+        elif w == "book" or w == "books" or w == "movie" or w == "billboard" or w == "show" or w == "episode" or w == "comics":
+          output = "entertainment"
+          break
+        elif w =="meme" or w == "rounds" or w == "forwarded":
+          output = "meme"
+          break
+        elif w == "oxford":
+          output = "oxford"
+          break
+        elif w == "fla" or w == "boca":
+          output = "florida"
+          break
+        elif w == "minn":
+          output = "minnesota"
+          break
+        elif w == "iowa":
+          output = "iowa"
+          break
+        elif w == "mo" or w == "louis":
+          output = "missouri"
+          break
+        elif w == "mich":
+          output = "michigan"
+          break
+        elif w == "pa":
+          output = "Pennsylvania"
+          break
+        elif w == "vegas" or w =="nev":
+          output = "nevada"
+          break
+        elif w =="tenn":
+          output = "Tennessee"
+          break
+        elif w == "nh":
+          output = "New Hampshire"
+          break
+        elif w == "colo":
+          output = "colorado"
+          break
+        else:
+          output = ""
+      return output
 
-  # EDA imported Speaker
-  speaker_response = str.lower(speaker_response.replace(" ","-"))
-  print(speaker_response)
-  if speaker_response not in np.array(modified_label["speaker"].unique()):
-    print("oh no, assign speaker score to avg score")
-    speaker_score = modified_label['mod_label'].mean()
-  else:
-    speaker_array = np.array(modified_label['speaker'].unique())
-    speaker_ohe = np.where(speaker_array == speaker_response, 1, 0)
-    speaker_ohe = list(speaker_ohe.reshape(-1,1))
-    print("speaker_ohe len: " + str(len(speaker_ohe)))
+    # apply function back to df['context']
+    modified_label['context'] = modified_label['context'].apply(clean_context)
+    modified_label['context'] = modified_label['context'].apply(clean_context_by_cat)
 
-  # EDA imported context
-  context_response = str.lower(context_response)
-  print(context_response)
-  if context_response not in np.array(modified_label["context"].unique()):
-    print("oh no, assign context score to avg score")
-    context_score = modified_label['mod_label'].mean()
-  else:
-    context_array = np.array(modified_label['context'].unique())
-    context_ohe = np.where(context_array == context_response, 1, 0)
-    context_ohe = list(context_ohe.reshape(-1,1))
-    print("context_ohe len: " + str(len(context_ohe)))
+    # drop the empty outputs, weird/unique context
+    modified_label = modified_label[modified_label['context'] != ""]
 
-  # EDA imported Party Affiliation
-  party_affli_response = str.lower(party_affli_response.replace(" ","-"))
-  print(party_affli_response)
-  if party_affli_response not in np.array(modified_label["party affiliation"].unique()):
-    print("oh no, assign party score to avg score")
-    party_affli_score = modified_label['mod_label'].mean()
-  else:
-    party_affli_array = np.array(modified_label['party affiliation'].unique())
-    party_affli_ohe = np.where(party_affli_array == party_affli_response, 1, 0)
-    party_affli_ohe = list(party_affli_ohe.reshape(-1,1))
-    print("party_affli_ohe len: " + str(len(party_affli_ohe)))
+    unique_contexts = list(modified_label.context.unique())
+    unique_party = list(modified_label['party affiliation'].unique())
+    # citation: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
 
-  # get device
-  device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-  )
+  # get info needed to input into model
+    speaker_response = speaker
+    context_generator = transform("What type of text is this article without extra text or special characters chosing one from the list: " + str(unique_contexts), state.chat_history)
+    context_response = ''.join(context_generator)
+    context_response = context_response.replace("\n", "")
+    print("context: " + context_response)
+    time.sleep(5)
+    party_affli_generator = transform("Give only the party affiliation of the article without extra text or special characters chosing one from the list: " + str(unique_party), state.chat_history)
+    party_affli_response = ''.join(party_affli_generator)
+    party_affli_response = party_affli_response.replace('\n', '')
+    print("party_affli: " + party_affli_response)
+    time.sleep(5)
 
-  # implement model prediction
-  if speaker_response in np.array(modified_label["speaker"]) and context_response in np.array(modified_label["context"]) and party_affli_response in np.array(modified_label["party affiliation"]):
-    # convert ohe to df for input
-    input = speaker_ohe + context_ohe + party_affli_ohe
-    print(len(input))
-    input_df = pd.DataFrame(input).T
-    # modify data to become torch.tensor
-    input_x = torch.tensor(input_df.to_numpy()).type(torch.float)
-    # input_x = input_x.to(device)
-    print("input_x len : " + str(len(input_x[0])))
-    prediction = social_credit_model(input_x[0])
-    prediciton_list = prediction.tolist()
-    for i in range(len(prediciton_list)):
-      if prediciton_list[i] == max(prediciton_list):
-          state.overall_social_credibility = i*2
-    print(prediction)
-    # state.overall_social_credibility = prediction
-  else:
-    speaker_score = modified_label['mod_label'].mean()
-    context_score = modified_label['mod_label'].mean()
-    party_affli_score = modified_label['mod_label'].mean()
-    state.overall_social_credibility = (speaker_score + context_score + party_affli_score) / 3
-  print(f"This is overall_social_credibility: {state.overall_social_credibility}")
-  state.overall_social_credibility = round(state.overall_social_credibility, 2)
+    # Please ignore, this is for testing purposes.
+  #   speaker_response = "scott-surovell"  
+  #   context_response = "speech"
+  #   party_affli_response = "democrat"
+
+    # EDA imported Speaker
+    speaker_response = str.lower(speaker_response.replace(" ","-"))
+    print(speaker_response)
+    if speaker_response not in np.array(modified_label["speaker"].unique()):
+      print("oh no, assign speaker score to avg score")
+      speaker_score = modified_label['mod_label'].mean()
+    else:
+      speaker_array = np.array(modified_label['speaker'].unique())
+      speaker_ohe = np.where(speaker_array == speaker_response, 1, 0)
+      speaker_ohe = list(speaker_ohe.reshape(-1,1))
+      print("speaker_ohe len: " + str(len(speaker_ohe)))
+
+    # EDA imported context
+    context_response = str.lower(context_response)
+    print(context_response)
+    if context_response not in np.array(modified_label["context"].unique()):
+      print("oh no, assign context score to avg score")
+      context_score = modified_label['mod_label'].mean()
+    else:
+      context_array = np.array(modified_label['context'].unique())
+      context_ohe = np.where(context_array == context_response, 1, 0)
+      context_ohe = list(context_ohe.reshape(-1,1))
+      print("context_ohe len: " + str(len(context_ohe)))
+
+    # EDA imported Party Affiliation
+    party_affli_response = str.lower(party_affli_response.replace(" ","-"))
+    print(party_affli_response)
+    if party_affli_response not in np.array(modified_label["party affiliation"].unique()):
+      print("oh no, assign party score to avg score")
+      party_affli_score = modified_label['mod_label'].mean()
+    else:
+      party_affli_array = np.array(modified_label['party affiliation'].unique())
+      party_affli_ohe = np.where(party_affli_array == party_affli_response, 1, 0)
+      party_affli_ohe = list(party_affli_ohe.reshape(-1,1))
+      print("party_affli_ohe len: " + str(len(party_affli_ohe)))
+
+    # get device
+    device = (
+      "cuda"
+      if torch.cuda.is_available()
+      else "mps"
+      if torch.backends.mps.is_available()
+      else "cpu"
+    )
+
+    # implement model prediction
+    if speaker_response in np.array(modified_label["speaker"]) and context_response in np.array(modified_label["context"]) and party_affli_response in np.array(modified_label["party affiliation"]):
+      # convert ohe to df for input
+      input = speaker_ohe + context_ohe + party_affli_ohe
+      print(len(input))
+      input_df = pd.DataFrame(input).T
+      # modify data to become torch.tensor
+      input_x = torch.tensor(input_df.to_numpy()).type(torch.float)
+      # input_x = input_x.to(device)
+      print("input_x len : " + str(len(input_x[0])))
+      prediction = social_credit_model(input_x[0])
+      prediciton_list = prediction.tolist()
+      for i in range(len(prediciton_list)):
+        if prediciton_list[i] == max(prediciton_list):
+            state.overall_social_credibility = i*2
+      print(prediction)
+      # state.overall_social_credibility = prediction
+    else:
+      speaker_score = modified_label['mod_label'].mean()
+      context_score = modified_label['mod_label'].mean()
+      party_affli_score = modified_label['mod_label'].mean()
+      state.overall_social_credibility = (speaker_score + context_score + party_affli_score) / 3
+    print(f"This is overall_social_credibility: {state.overall_social_credibility}")
+    state.overall_social_credibility = round(state.overall_social_credibility, 2)
   
   print(state.overall_social_credibility)
   state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
+  # the label is assigned here but i have issues 
+  if state.veracity >= 1 and state.veracity < 2:
+    label = "Pants on Fire"
+  elif state.veracity >= 2 and state.veracity < 3:
+    label = "False"
+  elif state.veracity >= 3 and state.veracity < 4:
+    label = "Barely True"
+  elif state.veracity >= 4 and state.veracity < 5:
+    label = "Half True"
+  elif state.veracity >= 5 and state.veracity < 6:
+    label = "Mostly True"
+  else: 
+    label = "True"
+  #pants on fire, barely true, half true, mostly true, true, false
+  state.veracity_label = label
 
 def navigate_to(event: me.ClickEvent, path: str):
   me.navigate(path)
@@ -1234,6 +1257,7 @@ def about_us():
         "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
     ])
 def deep_analysis_page():
+  state = me.state(State)
   with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
     # nav bar
     with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
@@ -1263,31 +1287,31 @@ def deep_analysis_page():
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
             me.text("Article Title", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.text("{Insert Title Text}", style=me.Style(font_size=16, font_family="Inter"))
+            me.text(f"{state.article_title}", style=me.Style(font_size=16, font_family="Inter"))
           # author
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
             me.text("Author", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.text("{Insert Author Text}", style=me.Style(font_size=16, font_family="Inter"))
+            me.text(f"{state.article_author}", style=me.Style(font_size=16, font_family="Inter"))
           # Date
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
             me.text("Date", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.text("{Insert Date Text}", style=me.Style(font_size=16, font_family="Inter"))
+            me.text(f"{state.article_date}", style=me.Style(font_size=16, font_family="Inter"))
           # Source
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
             me.text("Source", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.text("{Insert Source Text}", style=me.Style(font_size=16, font_family="Inter"))
+            me.text(f"{state.article_source}", style=me.Style(font_size=16, font_family="Inter"))
           # Topic
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=350)):
             me.text("Topic", style=me.Style(font_size=20, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.text("{Insert Topic Text}", style=me.Style(font_size=16, font_family="Inter"))
+            me.text(f"{state.article_topic}", style=me.Style(font_size=16, font_family="Inter"))
         with me.box(style=me.Style(width="100%", justify_content='space-around', align_items='flex-start', gap=30, display='flex')):
           # plot
           categories = ["Stance Detection", "Naive Realism", "Sensationalism", "Social Credibility"]
-          values = [4, 3, 5, 2] 
+          values = [state.overall_stance_score, state.overall_naive_realism_score, state.overall_sens_score, state.overall_social_credibility] 
           num_vars = len(categories)
           angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
           values += values[:1]  
@@ -1307,13 +1331,7 @@ def deep_analysis_page():
           with me.box(style=me.Style(padding=me.Padding.symmetric(horizontal=5, vertical=10), border_radius="5px", border=me.Border.all(me.BorderSide(width="1.5px", color="#010021", style='solid')), display='flex', flex_direction="column", justify_content="flex-start", align_items="flex-start", gap=5, max_width=700, width="50%")):
             me.text("Summary", style=me.Style(font_size=24, font_weight="bold", font_family="Inter"))
             me.box(style=me.Style(align_self='stretch', height=0, border=me.Border.all(me.BorderSide(width="0.5px", color="#010021", style='solid'))))
-            me.markdown("""
-The CNN Politics article discusses former President Donald Trump's response to a deadly midair collision over Washington, D.C., which killed 67 people. In his first major national crisis since returning to office, Trump quickly blamed Democrats and diversity initiatives in the federal government for the crash, despite the investigation being in its early stages. During a White House briefing, he criticized past administrations, particularly Biden and Obama, and linked the disaster to what he called lowered aviation standards due to diversity-focused hiring practices.
-                        
-Trump also took aim at former Transportation Secretary Pete Buttigieg, sarcastically criticizing his leadership. His remarks sparked backlash, with Buttigieg responding that Trump had already taken control of the FAA and military and should focus on actual solutions. Despite having no evidence to support his claims, Trump issued a presidential memorandum calling for a review of aviation policies and hiring practices.
-                        
-The article highlights how Trump's handling of the tragedy follows a familiar pattern from his first term—using crises to push political narratives and assign blame rather than focusing on immediate solutions. It also notes his aggressive approach in dealing with reporters and his broader efforts to reshape government policies in his second presidency.
-            """, style=me.Style(font_family="Inter", font_size=16, color="#010021", margin=me.Margin.symmetric(vertical=0)))
+            me.markdown(f"{state.article_summary}", style=me.Style(font_family="Inter", font_size=16, color="#010021", margin=me.Margin.symmetric(vertical=0)))
         me.text("Score Table", type='headline-3', style = me.Style(font_weight = "bold", color ="#010021", font_family = "Inter", margin=me.Margin.all(0)))
         score_table = pd.DataFrame(
         data = {
@@ -1367,8 +1385,17 @@ def insights():
                 style=me.Style(font_family="Inter", color="black"))
         # justify_content="flex-start", align_items="center", gap=5, display="inline-flex")
           with me.box(style=me.Style(align_self="stretch",justify_content="center", align_items="center", gap=28, display="inline-flex")):
-              me.link(text="Recommended", url="/uploadpdf", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#5271FF", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
-              me.link(text="Create Adjustments", url="/adjusting", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#A5A5A3", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
+            def recommended_selection(event: me.ClickEvent):
+              state = me.state(State)
+              state.selected_values_1 = ["Social_credibility", "Naive_realism", "Sensationalism", "Political_stance"]
+              state.radio_value = 'FCOT'
+              state.toggle_values = ["Vector_Database", "SERP_API", "Function_Call"] 
+              me.navigate("/uploadpdf")
+            me.button(label="Recommended", type='flat', on_click=recommended_selection, style=me.Style(font_family="Inter", font_size=16, font_style='bold', background="5271FF", border_radius=5))
+            def navigate_to_ca(event: me.ClickEvent):
+              me.navigate('/adjusting')
+            me.button(label="Create Adjustments", type='flat', on_click=navigate_to_ca, style=me.Style(font_family="Inter", background="#A5A5A3", font_size=16, font_style='bold', border_radius=5))
+            # me.link(text="Create Adjustments", url="/adjusting", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#A5A5A3", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
 
 def on_selection_change_1(e: me.SelectSelectionChangeEvent):
   state = me.state(State)
@@ -1470,10 +1497,33 @@ def adjusting():
             )
           # confirm button
           def save_selections(event: me.ClickEvent):
-            # me.query_params['ff'] = state.selected_values_1
-            me.navigate("/Gemini_Misinformation_ChatBot")
+            if (state.radio_value == '') or (len(state.toggle_values) == 0) or (len(state.selected_values_1) == 0):
+              print('please complete selection')
+            else:
+              me.navigate("/uploadpdf")
           me.button(label="Confirm", on_click=save_selections, style=me.Style(width="100%",  font_family='Inter', color="white", font_size=35, font_weight='bold', background="#22BB7C", padding=me.Padding.symmetric(vertical=10), border_radius=10, display='flex', justify_content='center'))
 
+def process_submission(event: me.ClickEvent):
+  # will need to add stuff to actually analyze the article
+  state = me.state(State)
+  if state.uploaded == False:
+    convert_url_to_pdf(state.link, r"C:\temp\analyze.pdf")
+    with open(r"C:\temp\analyze.pdf", 'rb') as f:
+      state.file = me.UploadedFile(contents=f.read())
+    state.uploaded = True
+    get_metadata(state.chat_history)
+  if state.radio_value == "Normal":
+    ask_normal_prompting_questions()
+  elif state.radio_value == "COT":
+    ask_cot_prompting_questions()
+  else: 
+    ask_fcot_prompting_questions
+  ask_pred_ai()
+  state.finish_analysis = True
+
+def link_inputted(e: me.InputBlurEvent):
+  state = me.state(State)
+  state.link = e.value
 
 @me.page(path='/uploadpdf', stylesheets=[
   "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
@@ -1519,132 +1569,53 @@ def uploadpdf():
                   with me.box(style=me.Style(display="flex", gap=5)):
                     me.icon("upload")
                     me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
-                me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
-                with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Submit", url="/results", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+                me.input(label="Link input", appearance="outline", on_blur=link_inputted, style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
+                me.button(label="Submit", on_click=process_submission, type='flat', style=me.Style(font_family="Inter", color="white", font_size=20, font_weight='bold', background="#5271FF", border_radius=5, padding=me.Padding.symmetric(vertical=5, horizontal=10), height=50))
               with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
-
-# might need to skip this page and go straight to the results page 
-@me.page(path='/analyzing', stylesheets=[
-  "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
-],
-)
-def analyzing():
-  s = me.state(State)
-  
-  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
-    # navbar
-    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
-      me.html(
-        """
-        <a href="/">
-          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
-        </a>
-        """
-      )
-      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
-        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
-        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-
-    # second header
-    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
-      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
-        me.text(text="Chenly Insights - PDF", type="headline-2", style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
-
-    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
-      with me.box(style=me.Style(width="100%", max_width=1440, background='white', padding=me.Padding.symmetric(horizontal=100, vertical=70), flex_direction='column', justify_content='center', align_content='center', display='flex', gap=10, min_height=750)):
-        with me.box(style=me.Style(align_self='stretch', flex="1 1 0", padding=me.Padding.all(50), border_radius=10, border=me.Border.all(me.BorderSide(width=1, color="#010021", style='solid')), flex_direction='column', justify_content='flex-start', align_items="left", gap=50, display='flex')):
-          with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', display='flex', gap="18.75px")):
-            with me.box(style=me.Style(align_self='stretch', justify_content='space-between', align_items='flex-start', display='flex')):
-              with me.box(style=me.Style(justify_content='flex-start', align_items='flex-start', gap=28, display='flex')):
-                with me.content_uploader(
-                  accepted_file_types=["pdf"],
-                  on_upload=handle_upload,
-                  type="flat",
-                  color="primary",
-                  style=me.Style(font_weight="bold", background="#5271FF", height=50),
-                ):
-                  with me.box(style=me.Style(display="flex", gap=5)):
-                    me.icon("upload")
-                    me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
-                me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
-                with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
-              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
-      # spinner
-          with me.box(style=me.Style(align_self='stretch', display='flex', justify_content='center')):
-            me.progress_spinner()
-
-@me.page(path='/results', stylesheets=[
-  "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
-])
-def results_page():
-  s = me.state(State)
-  
-  with me.box(style=me.Style(background="white", width="100%", display="flex", flex_direction="column", justify_content="flex-start", margin=me.Margin.all(0), overflow="auto")):
-    # navbar
-    with me.box(style=me.Style(position='fixed', width="100%", display='flex', top=0, overflow='hidden', justify_content="space-between", align_content="center", background='white', border=me.Border(bottom=me.BorderSide(width="0.5px", color='#010021', style='solid')), padding=me.Padding.symmetric(vertical=15, horizontal=50), z_index=10)):
-      me.html(
-        """
-        <a href="/">
-          <img src="https://res.cloudinary.com/dd7kwlela/image/upload/v1738889378/capstone-dsc180b/jiz38dkxevducq0rpeye.png" alt="Home" height=48>
-        </a>
-        """
-      )
-      with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=40, display="flex")):
-        me.link(text="Try Chenly Insights", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=16, font_weight='bold', background="#010021", padding=me.Padding.symmetric(vertical=8, horizontal=10), border_radius=5))
-        me.link(text="Prompt Testing", url="/prompt_testing", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="Pipeline Explanation", url="/pipeline_explanation", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-        me.link(text="About Us", url="/about_us", style=me.Style(text_decoration='none', font_family='Inter', color="#010021", font_size=16, font_weight='bold'))
-
-    # second header
-    with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex', background= "linear-gradient(to right, #5271FF , #22BB7C)")):
-      with me.box(style=me.Style(width="100%", max_width=1440, height="auto", padding = me.Padding.symmetric(vertical=100, horizontal=100),margin = me.Margin(top=80, bottom=10))):
-        me.text(text="Chenly Insights - Results", type="headline-2", style = me.Style(font_weight = "bold", color ="white", font_family = "Inter", margin=me.Margin.all(0)))
-
-    with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
-      with me.box(style=me.Style(width="100%", max_width=1440, background='white', padding=me.Padding.symmetric(horizontal=100, vertical=70), flex_direction='column', justify_content='center', align_content='center', display='flex', gap=10, min_height=750)):
-        with me.box(style=me.Style(align_self='stretch', flex="1 1 0", padding=me.Padding.all(50), border_radius=10, border=me.Border.all(me.BorderSide(width=1, color="#010021", style='solid')), flex_direction='column', justify_content='flex-start', align_items="left", gap=50, display='flex')):
-          with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='center', display='flex', gap="100px")):
-            with me.box(style=me.Style(align_self='stretch', justify_content='space-between', align_items='flex-start', display='flex')):
-              with me.box(style=me.Style(justify_content='flex-start', align_items='flex-start', gap=28, display='flex')):
-                with me.content_uploader(
-                  accepted_file_types=["pdf"],
-                  on_upload=handle_upload,
-                  type="flat",
-                  color="primary",
-                  style=me.Style(font_weight="bold", background="#5271FF", height=50),
-                ):
-                  with me.box(style=me.Style(display="flex", gap=5)):
-                    me.icon("upload")
-                    me.text("Upload PDF", style=me.Style(font_size=20, font_family="Inter"))
-                me.input(label="Link input", appearance="outline", style=me.Style(width = "300px", margin=me.Margin.all(0), display='flex', justify_content='center'))
-                with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Submit", url="/analyzing", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
-              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", display="flex", border=me.Border.all(me.BorderSide(width=1, color="#5271FF", style='solid')), padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                  me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
+                me.link(text="Make Adjustments", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="#5271FF", font_size=20, font_weight='bold'))
+          if s.finish_analysis == True: 
             with me.box(style = me.Style(flex_direction='column', justify_content='flex-start', align_items='center', gap=50, display='flex')):
               with me.box(style=me.Style(display='flex', justify_content='center', align_items='flex-start', gap=65)):
                 with me.box(style=me.Style(flex_direction='column', justify_content='flex-start', align_items='flex-start', gap=5, display='flex')):
                   me.text("This article is found to be", type="headline-4", style=me.Style(color="#DA5D39", font_family="Inter", margin=me.Margin.all(0)))
-                  me.text("{Insert your Score here}", type="headline-4", style=me.Style(color="#DA5D39", font_family="Inter", font_weight='bold', margin=me.Margin.all(0)))
-                me.icon(icon="emergency_heat", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64)) # pants on fire
-                # me.icon(icon="close", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64)) # false
-                # me.icon(icon="transition_fade", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # barely true
-                # me.icon(icon="star_rate_half", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # half true
-                # me.icon(icon="check", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # mostly true
-                # me.icon(icon="done_all", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # true
+                  me.text(f"{s.veracity_label}", type="headline-4", style=me.Style(color="#DA5D39", font_family="Inter", font_weight='bold', margin=me.Margin.all(0)))
+              if s.veracity_label == "Pants on Fire":
+                me.icon(icon="emergency_heat", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64))
+              elif s.veracity_label == "False":
+                me.icon(icon="close", style=me.Style(color="#DA5D39", font_size="64px",width=64, height=64)) # false
+              elif s.veracity_label == "Barely True":
+                me.icon(icon="transition_fade", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # barely true
+              elif s.veracity_label == "Half True":
+                me.icon(icon="star_rate_half", style=me.Style(color="#FDB815", font_size="64px",width=64, height=64)) # half true
+              elif s.veracity_label == "Mostly True":
+                me.icon(icon="check", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # mostly true
+              elif s.veracity_label == "True":
+                me.icon(icon="done_all", style=me.Style(color="#22BB7C", font_size="64px",width=64, height=64)) # true
               with me.box(style = me.Style(align_self='stretch')):
-                me.progress_bar(color='warn', value=10, mode='determinate') # use accent for mostlytrue and true, warn for false and pants on fire, primary for barely true and half true
+                me.progress_bar(color='warn', value=s.veracity * (100/6), mode='determinate') # use accent for mostlytrue and true, warn for false and pants on fire, primary for barely true and half true
             with me.box(style=me.Style(display='flex', justify_content='center', align_content='flex-start', gap=28)):
-              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background= "linear-gradient(to right, #5271FF , #22BB7C)", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                me.link(text="Deep Analysis (Highly Recommend)", url="/deep_analysis", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
-              with me.box(style=me.Style(height=50, justify_content="center", align_items="center", gap=5, display="flex", background="#5271FF", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5)):
-                me.link(text="Clear Article", url="/insights", style=me.Style(text_decoration='none', font_family='Inter', color="white", font_size=20, font_weight='bold'))
+              me.button(label="Deep Analysis (Highly Recommend)", on_click=navigate_to_deep, type="flat", style=me.Style(height=50, background="linear-gradient(to right, #5271FF , #22BB7C)", padding=me.Padding.symmetric(vertical=5, horizontal=10), border_radius=5, font_family="Inter", color="white", font_size=20, font_weight="bold"))
+              me.button(label="Clear Article", type="flat", on_click=reset_article, style=me.Style(height=50, background="#5271FF", border_radius=5, padding=me.Padding.symmetric(vertical=5, horizontal=10), font_family="Inter", color="white", font_size=20, font_weight="bold"))
+
+def navigate_to_deep(e: me.ClickEvent):
+  me.navigate("/deep_analysis")
+
+def reset_article(e: me.ClickEvent):
+  state = me.state(State)
+  state.article_title = ""
+  state.chat_history = ""
+  state.chat_history = []
+  state.veracity = 0.0
+  state.veracity_label = ""
+  state.link = ""
+  state.finish_analysis = False
+  state.vdb_response = ""
+  state.serp_response = ""
+  state.overall_sens_score = 0
+  state.overall_stance_score = 0
+  state.overall_social_credibility = 0
+  state.overall_naive_realism_score = 0
+  me.navigate('/uploadpdf')
             
 
 @me.page(path="/Gemini_Misinformation_ChatBot")
@@ -1811,22 +1782,46 @@ def Gemini_Misinformation_ChatBot():
 #     )
 
 # Used to get the headline of an article 
-def get_headline(history: list[mel.ChatMessage]):
+def get_metadata(history: list[mel.ChatMessage]):
   """asks gemini to go through the text of the pdf uploaded by the user and get the headline of the text 
     
     Args:
         history: chat history 
   """
+  # need to adjust this to get headline, author, date, keywords, and source, and summary
   state= me.state(State)
   chat_history = ""
   if state.file and state.uploaded:
     chat_history += f"\nuser: {pdf_to_text(state.file)}"
   chat_history += "\n".join(f"{message.role}: {message.content}" for message in history)
-  full_input = f"{chat_history}\nuser: Give just the title of the article."
+  full_input = f"{chat_history}\n"
+  user_input = """
+Please extract the headline, author, date, keywords, source, and summary of this article.
+It is very import to format the information like so:
+headline: {insert headline}
+date: {insert date}
+author: {insert author}
+keywords: {insert keywords}
+source: {insert source}
+summary: {insert summary}
+"""
+  full_input = full_input + user_input
   time.sleep(2)
   response = model.generate_content(full_input, stream=True)
   full_response = "".join(chunk.text for chunk in response)
-  state.article_title= full_response
+  headline_pattern = r"headline: (.+)"
+  date_pattern = r"date: (.+)"
+  author_pattern = r"author: (.+)"
+  keywords_pattern = r"keywords: (.+)"
+  source_pattern = r"source: (.+)"
+  summary_pattern = r"summary: (.+)"
+
+  state.article_title= re.search(headline_pattern, full_response).group(1)
+  state.article_date = re.search(date_pattern, full_response).group(1)
+  state.article_author = re.search(author_pattern, full_response).group(1)
+  state.article_topic = re.search(keywords_pattern, full_response).group(1)
+  state.article_source = re.search(source_pattern, full_response).group(1)
+  state.article_summary = re.search(summary_pattern, full_response).group(1)
   state.chat_history = history
   
 # Function for handling inputs into the generative AI model
@@ -1866,38 +1861,38 @@ def transform(input: str, history: list[mel.ChatMessage]):
             state.overall_stance_score = float(overall_stance_match.group(1))
     state.chat_history = history
     # normal prompt get score
-    overall_sens_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    overall_stance_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    if overall_sens_normal_prompt_match:
-        state.overall_sens_normal_score = float(overall_sens_normal_prompt_match.group(1))
-    if overall_stance_normal_prompt_match:
-        state.overall_stance_normal_score = float(overall_stance_normal_prompt_match.group(1))
+    # overall_sens_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # overall_stance_normal_prompt_match = re.search(r'normal\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # if overall_sens_normal_prompt_match:
+    #     state.overall_sens_normal_score = float(overall_sens_normal_prompt_match.group(1))
+    # if overall_stance_normal_prompt_match:
+    #     state.overall_stance_normal_score = float(overall_stance_normal_prompt_match.group(1))
     # cot prompt get score
-    overall_sens_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    overall_stance_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    if overall_sens_cot_prompt_match:
-        state.overall_sens_cot_score = float(overall_sens_normal_prompt_match.group(1))
-    if overall_stance_cot_prompt_match:
-        state.overall_stance_cot_score = float(overall_stance_normal_prompt_match.group(1))
+    # overall_sens_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # overall_stance_cot_prompt_match = re.search(r'cot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # if overall_sens_cot_prompt_match:
+    #     state.overall_sens_cot_score = float(overall_sens_normal_prompt_match.group(1))
+    # if overall_stance_cot_prompt_match:
+    #     state.overall_stance_cot_score = float(overall_stance_normal_prompt_match.group(1))
     print('checking for bug')
-    print(state.overall_sens_cot_score, state.overall_stance_cot_score)
+    # print(state.overall_sens_cot_score, state.overall_stance_cot_score)
     # fcot prompt get score
-    overall_sens_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    overall_stance_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
-    if overall_sens_fcot_prompt_match:
-        state.overall_sens_fcot_score = float(overall_sens_fcot_prompt_match.group(1))
-    if overall_stance_fcot_prompt_match:
-        state.overall_stance_fcot_score = float(overall_stance_fcot_prompt_match.group(1))
-    print('checking for bug')
-    print(state.overall_sens_fcot_score, state.overall_stance_fcot_score)
-    state.normal_prompt_vs_fcot_prompt_log['normal_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_normal_score),2)),
-                                                         "political_stance: " + str(round(float(state.overall_stance_normal_score),2))]
-    state.normal_prompt_vs_fcot_prompt_log['fcot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_fcot_score),2)),
-                                                             "political_stance: " + str(round(float(state.overall_stance_fcot_score), 2))]
-    state.normal_prompt_vs_fcot_prompt_log['cot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_cot_score),2)),
-                                                             "political_stance: " + str(round(float(state.overall_stance_cot_score), 2))]
-    print("####### prompt log ########")
-    print(state.normal_prompt_vs_fcot_prompt_log)
+    # overall_sens_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*sensationalism\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # overall_stance_fcot_prompt_match = re.search(r'fcot\s*prompting\s*overall\s*stance\s*:\s*(\d+(\.\d+)?)', text_chunk, re.IGNORECASE)
+    # if overall_sens_fcot_prompt_match:
+    #     state.overall_sens_fcot_score = float(overall_sens_fcot_prompt_match.group(1))
+    # if overall_stance_fcot_prompt_match:
+    #     state.overall_stance_fcot_score = float(overall_stance_fcot_prompt_match.group(1))
+    # print('checking for bug')
+    # print(state.overall_sens_fcot_score, state.overall_stance_fcot_score)
+    # state.normal_prompt_vs_fcot_prompt_log['normal_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_normal_score),2)),
+    #                                                      "political_stance: " + str(round(float(state.overall_stance_normal_score),2))]
+    # state.normal_prompt_vs_fcot_prompt_log['fcot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_fcot_score),2)),
+    #                                                          "political_stance: " + str(round(float(state.overall_stance_fcot_score), 2))]
+    # state.normal_prompt_vs_fcot_prompt_log['cot_prompt'] = ["sensationalism: " + str(round(float(state.overall_sens_cot_score),2)),
+    #                                                          "political_stance: " + str(round(float(state.overall_stance_cot_score), 2))]
+    # print("####### prompt log ########")
+    # print(state.normal_prompt_vs_fcot_prompt_log)
     # FIX bug where if model is asked questions. veracity will automatically populate
     state.veracity = round(np.mean([state.overall_naive_realism_score, 10 - state.overall_sens_score, state.overall_stance_score, state.overall_social_credibility]), 2)
 
