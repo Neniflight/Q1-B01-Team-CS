@@ -16,7 +16,6 @@ where score is a float and the phrase should be in plain text with no bolding or
 3. verify facts: Compare the stance against verified facts.\
 Provide explanation to your response to greater achieve each objective function.\
 Then, give an overall score for political stance based on the objective functions from a score of 1 to 6.\
-with 1 being extremely biased towards democratic and 6 being extremely biased towards conservative and 3 being neutral \
-Lastly please phrase overall score as 'cot Prompting Overall Stance: {score}'\
+with 1 being political neural towards democratic and 6 being extremely biased towards conservative or democratic \Lastly please phrase overall score as 'cot Prompting Overall Stance: {score}'\
 where score is a float and the phrase should be in plain text with no bolding or italics"
 }

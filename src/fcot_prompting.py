@@ -18,7 +18,7 @@ based on your evaluation of three objective functions defined as\
 3. verify facts: Compare the stance against verified facts.\
 Think step by step and refine the current iteration to greater achieve each objective function.\
 Then, give an overall score for political stance based on the objective functions from a score of 1 to 6.\
-with 1 being extremely biased towards democratic and 6 being extremely biased towards conservative and 3 being neutral \
+with 1 being political neural towards democratic and 6 being extremely biased towards conservative or democratic \
 Lastly please phrase overall score as 'Fcot Prompting Overall Stance: {score}'\
 where score is a float and the phrase should be in plain text with no bolding or italics"
 }
