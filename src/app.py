@@ -914,13 +914,23 @@ def home():
     # examples section
     with me.box(style=me.Style(align_self="stretch", background="linear-gradient(90deg, #5271FF 0%, #22BB7C 100%)", justify_content="center", display='flex')):
       with me.box(style=me.Style(width="100%", padding=me.Padding.all(100), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
-        me.text("Samples", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
-        with me.box(style=me.Style(justify_content="center", align_items="flex-start", gap=30, display="inline-flex")):
-          me.button("Trusted News Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
-          me.button("Satirical Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
-          me.button("Sketchy Sources", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
+        me.text("Article Analysis Demo", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
+        # with me.box(style=me.Style(justify_content="center", align_items="flex-start", gap=30, display="inline-flex")):
+        #   me.button("Trusted News Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
+        #   me.button("Satirical Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
+        #   me.button("Sketchy Sources", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
         with me.box(style=me.Style(display="flex", align_self="stretch", justify_content="center")):
-          me.image(src="https://archive.org/download/placeholder-image/placeholder-image.jpg", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
+        #   me.html(
+        #     """<video width="320" height="240" controls>
+        #           <source src="src/Demo_video/Chenley_article_analysis_demo.mp4" type="video/mp4">
+        #         </video>"""
+        #   )
+          # me.html(
+          #   """<iframe width="420" height="315"
+          #       src="https://studio.youtube.com/video/4zEehOuDFuk/edit">
+          #       </iframe>"""
+          # )
+          me.video(src="https://res.cloudinary.com/dd7kwlela/video/upload/f_auto:video,q_auto/v1/capstone-dsc180b/twmlmtw55w303kb6anpk", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
     with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex')):
       with me.box(style=me.Style(max_width=1440, padding=me.Padding.all(100), background="white", justify_content="space-between", align_items="flex-start", display="inline-flex")):
         with me.box(style=me.Style(flex="1 1 0", padding= me.Padding(right=50), flex_direction="column", justify_content="flex-start", align_items="flex_start", gap=15, display="flex")):
