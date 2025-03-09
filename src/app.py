@@ -908,28 +908,14 @@ def home():
             me.text(text="Fight Against Misinformation", type="headline-3", style=me.Style(color="#010021", word_wrap="break-word",font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
             me.text(text="By Calvin Nguyen and Samantha Lin", type="headline-5", style=me.Style(color="#A5A5A3", word_wrap="break-word", font_family="Inter", font_weight=700, margin=me.Margin.all(5)))
           with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=5, display="inline-flex")):
-            me.button("Try It Out!", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
-            me.button("Learn More", style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+            me.button("Try It Out!", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"), on_click=lambda x: navigate_to(x, "/insights"))
+            me.button("Learn More", style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"), on_click=lambda x: navigate_to(x, "/about_us"))
         me.image(src="https://media.istockphoto.com/id/1409182397/vector/spreading-fake-news-concept.jpg?s=2048x2048&w=is&k=20&c=veFBTYmO-wHEh7khaQ8wQWJN0-DO4Q2hQY7lrboIGbg=", style=me.Style(width="540px", height="485px"))
     # examples section
     with me.box(style=me.Style(align_self="stretch", background="linear-gradient(90deg, #5271FF 0%, #22BB7C 100%)", justify_content="center", display='flex')):
       with me.box(style=me.Style(width="100%", padding=me.Padding.all(100), max_width=1440, flex_direction="column", justify_content="flex-start", align_items= "flex-start", gap=20, display="inline-flex")):
         me.text("Article Analysis Demo", type="headline-3", style=me.Style(align_self="stretch", color="white", font_family="Inter", font_weight=700, word_wrap="break-word", margin=me.Margin.all(0)))
-        # with me.box(style=me.Style(justify_content="center", align_items="flex-start", gap=30, display="inline-flex")):
-        #   me.button("Trusted News Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
-        #   me.button("Satirical Articles", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
-        #   me.button("Sketchy Sources", type="stroked", style=me.Style(color="white", font_family="Inter", font_weight="bold", font_size="20px", border=me.Border.all(me.BorderSide(width="1.5px", color="white", style="solid"))))
         with me.box(style=me.Style(display="flex", align_self="stretch", justify_content="center")):
-        #   me.html(
-        #     """<video width="320" height="240" controls>
-        #           <source src="src/Demo_video/Chenley_article_analysis_demo.mp4" type="video/mp4">
-        #         </video>"""
-        #   )
-          # me.html(
-          #   """<iframe width="420" height="315"
-          #       src="https://studio.youtube.com/video/4zEehOuDFuk/edit">
-          #       </iframe>"""
-          # )
           me.video(src="https://res.cloudinary.com/dd7kwlela/video/upload/f_auto:video,q_auto/v1/capstone-dsc180b/twmlmtw55w303kb6anpk", style=me.Style(align_self="stretch", border_radius="10px", height="572px"))
     with me.box(style=me.Style(align_self="stretch", justify_content="center", display='flex')):
       with me.box(style=me.Style(max_width=1440, padding=me.Padding.all(100), background="white", justify_content="space-between", align_items="flex-start", display="inline-flex")):
@@ -1020,16 +1006,6 @@ def home():
             with me.card_actions(align="end"):
               me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
               me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
-
-@me.page(path="/prompt_testing")
-def prompt_testing():
-  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
-    me.text("Select your Prompting Style", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
-    me.text("This page was made before designing our site on Figma, so the look is outdated.", type='body-1')
-    with me.box(style=me.Style(display='flex', flex_direction='row', gap=25)):
-      me.button("Normal Prompting", on_click=lambda x: navigate_to(x, '/normal_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("CoT Prompting", on_click=lambda x: navigate_to(x, '/cot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("FCoT Prompting", on_click=lambda x: navigate_to(x, '/fcot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
