@@ -1021,6 +1021,16 @@ def home():
               me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
               me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
 
+@me.page(path="/prompt_testing")
+def prompt_testing():
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
+    me.text("Select your Prompting Style", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
+    me.text("This page was made before designing our site on Figma, so the look is outdated.", type='body-1')
+    with me.box(style=me.Style(display='flex', flex_direction='row', gap=25)):
+      me.button("Normal Prompting", on_click=lambda x: navigate_to(x, '/normal_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("CoT Prompting", on_click=lambda x: navigate_to(x, '/cot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("FCoT Prompting", on_click=lambda x: navigate_to(x, '/fcot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
   with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
