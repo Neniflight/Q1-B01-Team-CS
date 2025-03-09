@@ -8,6 +8,8 @@
 * mostly-true
 * true
 
+If you would like data for our human responses and our generative AI responses on naive realism, here is the google sheet: [Link](https://docs.google.com/spreadsheets/d/1Bevh4uJoYqQuRweXrXcLxL4_JyugdPpeIiUrHEqhEDw/edit?usp=sharing)
+
 ---
 # File Description #
 Each file on this repo has its own purpose! We will explain what each file does below
