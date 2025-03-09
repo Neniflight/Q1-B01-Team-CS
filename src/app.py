@@ -63,12 +63,12 @@ safety_settings = {
   HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
 }
 
-# function used to help with function calling and setting configurations
-def tool_config_from_mode(mode: str, fns: Iterable[str] = ()):
-    """Create a tool config with the specified function calling mode."""
-    return content_types.to_tool_config(
-        {"function_calling_config": {"mode": mode, "allowed_function_names": fns}}
-    )
+# # function used to help with function calling and setting configurations
+# def tool_config_from_mode(mode: str, fns: Iterable[str] = ()):
+#     """Create a tool config with the specified function calling mode."""
+#     return content_types.to_tool_config(
+#         {"function_calling_config": {"mode": mode, "allowed_function_names": fns}}
+#     )
 
 # Creating the model with proper configs
 model = genai.GenerativeModel(
@@ -933,7 +933,7 @@ def home():
   - **Vector Database Lookup**  
   - **Function Call**  
             """, style=me.Style(font_family="Inter", font_size="16px", color="#010021"))
-          me.button("Try It Out", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"))
+          me.button("Try It Out", type='flat', style=me.Style(font_family="Inter", font_size="20px", font_weight="bold"), on_click=lambda x: navigate_to(x, "/prompt_testing"))
         with me.box(style=me.Style(align_self="stretch", flex_direction="column", justify_content="flex-start", align_items="flex-start", gap="33px", display="inline-flex")):
           with me.box(style=me.Style(justify_content="flex-start", align_items="center", gap=75, display="inline-flex")):
             with me.box(style=me.Style(flex_direction="column", justify_content="center", align_items="center", gap=20, display="inline-flex")):
@@ -978,8 +978,8 @@ def home():
               )
 
             with me.card_actions(align="end"):
-              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
-              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
+              me.link(text="Linkedin", url="https://www.linkedin.com/in/calvin-nguyen-data/", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+              me.link(text="Github", url="https://github.com/Neniflight", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#010021", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
           
           with me.card(appearance="outlined", style=me.Style(font_family="Inter",border=me.Border.all(me.BorderSide(width="2px", color="#5271FF", style="solid")))):
             me.html("""
@@ -1004,8 +1004,18 @@ def home():
               )
 
             with me.card_actions(align="end"):
-              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
-              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
+              me.link(text="Linkedin", url="https://www.linkedin.com/in/samantha-lin-3bb601271/", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+              me.link(text="Github", url="https://github.com/Samanthalin0918", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#010021", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+
+@me.page(path="/prompt_testing")
+def prompt_testing():
+  with me.box(style=me.Style(padding=me.Padding.all(15), margin=me.Margin.all(15), width="100%", align_items='center', justify_content='center', flex_direction="column")):
+    me.text("Select your Prompting Style", type="headline-3", style=me.Style(margin=me.Margin(bottom=42)))
+    me.text("This page was made before designing our site on Figma, so the look is outdated.", type='body-1')
+    with me.box(style=me.Style(display='flex', flex_direction='row', gap=25)):
+      me.button("Normal Prompting", on_click=lambda x: navigate_to(x, '/normal_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("CoT Prompting", on_click=lambda x: navigate_to(x, '/cot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      me.button("FCoT Prompting", on_click=lambda x: navigate_to(x, '/fcot_adjustments'), color='primary', type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/normal_adjustments")
 def normal_adjustments():
@@ -1016,11 +1026,11 @@ def normal_adjustments():
       me.button("None", on_click=lambda x: navigate_to(x, "/norm_none"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database", on_click=lambda x: navigate_to(x, "/norm_vb"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Serp API", on_click=lambda x: navigate_to(x, "/norm_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database & Serp API", on_click=lambda x: navigate_to(x, "/norm_vb_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/norm_none")
 def norm_none():
@@ -1047,11 +1057,11 @@ def cot_adjustments():
       me.button("None", on_click=lambda x: navigate_to(x, "/cot_normal"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database", on_click=lambda x: navigate_to(x, "/cot_vb"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Serp API", on_click=lambda x: navigate_to(x, "/cot_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database & Serp API", on_click=lambda x: navigate_to(x, "/cot_vb_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/cot_normal")
 def cot_none():
@@ -1078,11 +1088,11 @@ def fcot_adjustments():
       me.button("None", on_click=lambda x: navigate_to(x, "/fcot_normal"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database", on_click=lambda x: navigate_to(x, "/fcot_vb"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Serp API", on_click=lambda x: navigate_to(x, "/fcot_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
       me.button("Vector Database & Serp API", on_click=lambda x: navigate_to(x, "/fcot_vb_serp"), color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
-      me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Serp API and Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
+      # me.button("Vector Database & Serp API & Function Calling", on_click=navigate_to_ve, color="primary", type="flat", style = me.Style(border=me.Border.all(me.BorderSide(width=2, color="black")), align_self="center"))
 
 @me.page(path="/fcot_normal")
 def fcot_none():
@@ -1246,9 +1256,9 @@ def about_us():
               )
 
             with me.card_actions(align="end"):
-              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
-              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
-          
+              me.link(text="Linkedin", url="https://www.linkedin.com/in/calvin-nguyen-data/", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+              me.link(text="Github", url="https://github.com/Neniflight", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#010021", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+                        
           with me.card(appearance="outlined", style=me.Style(font_family="Inter",border=me.Border.all(me.BorderSide(width="2px", color="#5271FF", style="solid")))):
             me.html("""
             <div style="background: linear-gradient(to right, #5271FF, #22BB7C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; margin: 0;">
@@ -1272,8 +1282,8 @@ def about_us():
               )
 
             with me.card_actions(align="end"):
-              me.button(label="Linkedin", type="flat", style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white"))
-              me.button(label="Github", type="flat", style=me.Style(font_family="Inter", background="#010021", color="white"))
+              me.link(text="Linkedin", url="https://www.linkedin.com/in/samantha-lin-3bb601271/", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#5271FF", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
+              me.link(text="Github", url="https://github.com/Samanthalin0918", open_in_new_tab=True, style=me.Style(font_family="Inter", margin=me.Margin.symmetric(horizontal=10), background="#010021", color="white", text_decoration='none', padding=me.Padding.symmetric(vertical=10, horizontal=20), border_radius=30))
 # Research Paper section
     with me.box(style=me.Style(align_self="stretch", background="white", justify_content="center", display="flex")):
       # flex_direction="column", 
@@ -1284,7 +1294,7 @@ def about_us():
         me.text(text="Below, you can read through the research paper. Feel free to download it as well!", 
                 type="body-1", style = me.Style(font_family="Inter"))
         me.embed(
-          src="https://olive-edie-30.tiiny.site/",
+          src="https://genai-for-good-dsc-cap-wi2553.tiiny.site",
           style=me.Style(width="100%", height=800)
         )
         
@@ -1479,7 +1489,7 @@ def insights():
               state = me.state(State)
               state.selected_values_1 = ["Social_credibility", "Naive_realism", "Sensationalism", "Political_stance"]
               state.radio_value = 'FCOT'
-              state.toggle_values = ["Vector_Database", "SERP_API", "Function_Call"] 
+              state.toggle_values = ["Vector_Database", "SERP_API"] 
               me.navigate("/uploadpdf")
             me.button(label="Recommended", type='flat', on_click=recommended_selection, style=me.Style(font_family="Inter", font_size=16, font_style='bold', background="5271FF", border_radius=5))
             def navigate_to_ca(event: me.ClickEvent):
@@ -1555,7 +1565,7 @@ def adjusting():
               buttons=[
                 me.ButtonToggleButton(label="Vector Database", value="Vector_Database"),
                 me.ButtonToggleButton(label="SERP API", value="SERP_API"),
-                me.ButtonToggleButton(label="Function Call", value="Function_Call"),
+                # me.ButtonToggleButton(label="Function Call", value="Function_Call"),
               ],
               on_change=on_toggle_change,
               multiple=True,
